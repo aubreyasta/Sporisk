@@ -1,23 +1,24 @@
 """
-utils/session.py
-Initializes and manages Streamlit session state.
+utils/session.py — Session state management
 """
-
+from __future__ import annotations
 import streamlit as st
 
 
 def init_session_state():
-    """Set default session state values on first load."""
     defaults = {
-        # What the user clicked on the map
-        "selected_feature": None,   # dict with type, id, name, data
-        "selection_type": None,     # "zip" | "county" | None
-
-        # Current map LoD (derived from zoom, but we track it for the badge)
-        "current_lod": "county",    # "county" | "zip"
-
-        # Last loaded data timestamps (for cache invalidation)
-        "data_loaded_at": None,
+        "selected_feature": None,
+        "selection_type":   None,
+        "current_lod":      "county",
+        "data_loaded_at":   None,
+        "chat_messages":    [],
+        # User's detected county (set once at startup from location)
+        # Value: county name string, "OUT_OF_RANGE", or None (not yet detected)
+        "user_county":      None,
+        # Whether the county picker popover is open
+        "county_picker_open": False,
+        # Which metric chart is open (metric key string or None)
+        "active_chart":       None,
     }
     for key, val in defaults.items():
         if key not in st.session_state:
@@ -25,10 +26,9 @@ def init_session_state():
 
 
 def set_selection(feature_type: str, feature_id: str, name: str, data: dict):
-    """Called when a map feature is clicked."""
     st.session_state["selected_feature"] = {
         "type": feature_type,
-        "id": feature_id,
+        "id":   feature_id,
         "name": name,
         "data": data,
     }
@@ -37,4 +37,4 @@ def set_selection(feature_type: str, feature_id: str, name: str, data: dict):
 
 def clear_selection():
     st.session_state["selected_feature"] = None
-    st.session_state["selection_type"] = None
+    st.session_state["selection_type"]   = None
