@@ -1,5 +1,5 @@
 """
-SporaSync — Data Collector & Standardization Pipeline
+SporeRisk — Data Collector & Standardization Pipeline
 ======================================================
 Merges the three scraper outputs (weather.csv, air_quality.csv, cases.csv)
 into a single master CSV ready for model training.
@@ -21,7 +21,7 @@ Usage:
     python data_collector.py    # then — builds the master CSV
 
 Input:  data/weather.csv, data/air_quality.csv, data/cases.csv
-Output: sporasync_master_corrected.csv
+Output: sporerisk_master_corrected.csv
 """
 
 import pandas as pd
@@ -37,7 +37,7 @@ warnings.filterwarnings("ignore")
 # ─────────────────────────────────────────────────────────────────────────────
 
 DATA_DIR   = "data"
-OUTPUT_CSV = "sporasync_master_corrected.csv"
+OUTPUT_CSV = "sporerisk_master_corrected.csv"
 
 # County metadata: FIPS codes and representative coordinates
 # (same as Weather.py — coordinates are county centroids)
@@ -458,7 +458,7 @@ def validate(df):
 
 def run():
     print("=" * 70)
-    print("  SporaSync — Data Collector & Standardization Pipeline")
+    print("  SporeRisk — Data Collector & Standardization Pipeline")
     print("  Blueprint §6 Stages 1-5 + §7.1 Risk Index")
     print("=" * 70)
 
