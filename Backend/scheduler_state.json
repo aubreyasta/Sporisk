@@ -1,0 +1,12 @@
+{
+  "weather_last_date": "2026-03-07",
+  "air_quality_last_date": "2025-10-31",
+  "cases_last_year": 2025,
+  "last_check": {
+    "weather": "2026-03-07T10:39:02.850478",
+    "air_quality": "2026-03-07T10:39:02.850478",
+    "cases": "2026-03-07T10:39:02.850478"
+  },
+  "last_pipeline_run": "2026-03-07T10:39:02.850478",
+  "data_hashes": {}
+}

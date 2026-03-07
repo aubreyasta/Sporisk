@@ -27,7 +27,7 @@ from datetime import date
 
 START_DATE  = "2020-01-01"
 END_DATE    = date.today().isoformat()
-OUTPUT_DIR  = "data"
+OUTPUT_DIR  = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data")
 
 COUNTIES = {
     "Fresno":      {"lat": 36.7378, "lon": -119.7871, "fips": "06019"},

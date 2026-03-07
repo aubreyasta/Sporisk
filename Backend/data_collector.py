@@ -31,14 +31,12 @@ import os
 import warnings
 warnings.filterwarnings("ignore")
 
-
 # ─────────────────────────────────────────────────────────────────────────────
 # CONFIG
 # ─────────────────────────────────────────────────────────────────────────────
 
-DATA_DIR   = "data"
-OUTPUT_CSV = "sporerisk_master_corrected.csv"
-
+DATA_DIR   = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data")
+OUTPUT_CSV = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "sporerisk_master_corrected.csv")
 # County metadata: FIPS codes and representative coordinates
 # (same as Weather.py — coordinates are county centroids)
 COUNTY_META = {

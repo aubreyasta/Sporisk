@@ -9,6 +9,7 @@ Input:  sporerisk_master.csv
 Output: baseline_predictions.csv, prints evaluation metrics
 """
 
+import os
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
@@ -23,7 +24,9 @@ warnings.filterwarnings("ignore")
 # STEP 1: Load and aggregate to monthly
 # ============================================================
 
-def load_and_aggregate(csv_path="sporerisk_master_corrected.csv"):
+_DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data")
+
+def load_and_aggregate(csv_path=os.path.join(_DATA, "sporerisk_master_corrected.csv")):
     """
     Takes the daily master CSV and collapses it to monthly rows.
     

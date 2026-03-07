@@ -1,0 +1,49 @@
+county,year,case_count,cases_source
+Kern,2020,2954,cdph_confirmed
+Kern,2021,3045,cdph_confirmed
+Kern,2022,2407,cdph_confirmed
+Kern,2023,3152,cdph_confirmed
+Kern,2024,3990,cdph_confirmed
+Fresno,2020,480,news_crossref
+Fresno,2021,560,news_crossref
+Fresno,2022,510,news_crossref
+Fresno,2023,400,news_crossref
+Fresno,2024,900,news_crossref
+Tulare,2020,190,news_crossref
+Tulare,2021,230,news_crossref
+Tulare,2022,200,news_crossref
+Tulare,2023,340,news_crossref
+Tulare,2024,600,news_crossref
+Kings,2020,100,cdph_estimated
+Kings,2021,120,cdph_estimated
+Kings,2022,115,cdph_estimated
+Kings,2023,150,cdph_estimated
+Kings,2024,210,cdph_estimated
+San Joaquin,2020,70,news_crossref
+San Joaquin,2021,85,news_crossref
+San Joaquin,2022,80,news_crossref
+San Joaquin,2023,155,news_crossref
+San Joaquin,2024,239,news_crossref
+Merced,2020,50,cdph_estimated
+Merced,2021,65,cdph_estimated
+Merced,2022,55,cdph_estimated
+Merced,2023,90,cdph_estimated
+Merced,2024,140,cdph_estimated
+Stanislaus,2020,45,cdph_estimated
+Stanislaus,2021,55,cdph_estimated
+Stanislaus,2022,50,cdph_estimated
+Stanislaus,2023,85,cdph_estimated
+Stanislaus,2024,130,cdph_estimated
+Madera,2020,22,county_ph
+Madera,2021,38,county_ph
+Madera,2022,35,county_ph
+Madera,2023,55,county_ph
+Madera,2024,80,county_ph
+Kern,2025,1800,provisional
+Fresno,2025,576,provisional
+Tulare,2025,371,provisional
+Kings,2025,120,provisional
+San Joaquin,2025,272,provisional
+Merced,2025,100,provisional
+Stanislaus,2025,90,provisional
+Madera,2025,50,provisional
