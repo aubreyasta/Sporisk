@@ -27,8 +27,6 @@ import numpy as np
 import os
 import json
 from datetime import datetime, date
-from dotenv import load_dotenv
-load_dotenv()
 
 # ─────────────────────────────────────────────────────────────────────────────
 # APP INIT
@@ -208,15 +206,25 @@ def get_environmental_stats(county: str) -> dict:
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
 
-def get_gemini_client():
+def get_gemini_client(with_search=False):
     """Initialize Gemini client. Returns None if no API key."""
     if not GEMINI_API_KEY:
         return None
     try:
         import google.generativeai as genai
         genai.configure(api_key=GEMINI_API_KEY)
+
+        if with_search:
+            # Enable Google Search grounding for real-time local data
+            from google.generativeai.types import Tool
+            google_search = Tool(google_search={})
+            return genai.GenerativeModel(
+                "gemini-2.0-flash",
+                tools=[google_search],
+            )
         return genai.GenerativeModel("gemini-2.0-flash")
-    except Exception:
+    except Exception as e:
+        print(f"Gemini init error: {e}")
         return None
 
 
@@ -237,10 +245,10 @@ Risk Level: {risk_data.get('risk_level', 'Unknown')}
 Predicted Monthly Cases: {risk_data.get('predicted_cases', 'N/A')}
 
 Current Environmental Conditions:
-- Temperature: {env_stats.get('temperature_c', 'N/A')}°C
+- Temperature: {env_stats.get('temperature_c', 'N/A')}C
 - Wind Speed: {env_stats.get('wind_speed_kmh', 'N/A')} km/h
 - Precipitation: {env_stats.get('precipitation_mm', 'N/A')} mm
-- PM10 (dust): {env_stats.get('pm10_ugm3', 'N/A')} µg/m³
+- PM10 (dust): {env_stats.get('pm10_ugm3', 'N/A')} ug/m3
 
 Respond ONLY with a JSON array of strings. No markdown, no explanation. Example:
 ["Wind speeds are elevated, increasing dust dispersal", "Dry soil conditions favor spore release"]
@@ -500,7 +508,8 @@ def get_ai_summary(county: str):
 def chat(req: ChatRequest):
     """
     Gemini-powered chatbot for health advice, nearby resources,
-    and Valley Fever questions.
+    and Valley Fever questions. Uses Google Search grounding for
+    real-time local healthcare provider lookups.
     """
     # Resolve county context
     county = req.county
@@ -516,18 +525,57 @@ def chat(req: ChatRequest):
 Current context for {county} County:
 - Risk Level: {risk.get('risk_level', 'Unknown') if risk else 'Unknown'}
 - Predicted Monthly Cases: {risk.get('predicted_cases', 'N/A') if risk else 'N/A'}
-- Temperature: {env.get('temperature_c', 'N/A')}°C
+- Temperature: {env.get('temperature_c', 'N/A')}C
 - Wind: {env.get('wind_speed_kmh', 'N/A')} km/h
-- PM10: {env.get('pm10_ugm3', 'N/A')} µg/m³
+- PM10: {env.get('pm10_ugm3', 'N/A')} ug/m3
 """
 
-    model = get_gemini_client()
+    # Detect if this is a healthcare/location query that benefits from live search
+    msg_lower = req.message.lower()
+    needs_search = any(w in msg_lower for w in [
+        "pharmacy", "drugstore", "clinic", "hospital", "doctor",
+        "antifungal", "fluconazole", "medication", "prescription",
+        "nearest", "closest", "nearby", "where can i", "find a",
+        "healthcare", "urgent care", "emergency", "ER",
+    ])
+
+    # Use search-grounded model for healthcare queries, regular for others
+    model = get_gemini_client(with_search=needs_search)
 
     if not model:
-        # Fallback: rule-based responses for common queries
         return _fallback_chat(req.message, county)
 
-    system_prompt = f"""You are SporeRisk Health Assistant, an AI advisor for Valley Fever 
+    county_location = ""
+    if county:
+        meta = COUNTY_META.get(county, {})
+        county_location = f"The user is in {county} County, California (lat: {meta.get('lat')}, lon: {meta.get('lon')}). "
+
+    if needs_search:
+        system_prompt = f"""You are SporeRisk Health Assistant, built at UC Merced for HackMerced.
+
+{county_location}
+
+The user is asking about healthcare resources related to Valley Fever (Coccidioidomycosis).
+
+USE GOOGLE SEARCH to find REAL, SPECIFIC healthcare providers near the user's location. Include:
+- Actual pharmacy/clinic/hospital names
+- Real addresses and phone numbers when available
+- Whether they are currently open if possible
+- Distance or general proximity to the user's county
+
+{risk_context}
+
+IMPORTANT GUIDELINES:
+- Search for real providers in {county + ' County, California' if county else 'the Central Valley, California'}
+- For antifungal medications (fluconazole, itraconazole), remind users they need a prescription
+- Always recommend consulting a healthcare provider for medical decisions
+- Prioritize community health centers and county health departments for uninsured patients
+- Be concise and actionable — users are on mobile
+- Respond in a warm, community-focused tone aligned with CITRIS values of equitable access
+
+Keep responses under 250 words. Be specific with names and addresses."""
+    else:
+        system_prompt = f"""You are SporeRisk Health Assistant, an AI advisor for Valley Fever 
 (Coccidioidomycosis) in California's Central Valley. You were built at UC Merced for HackMerced.
 
 Your role:
@@ -540,8 +588,6 @@ Your role:
 
 GUIDELINES:
 - Be concise and actionable — users are on mobile
-- For pharmacy/clinic questions, suggest well-known Central Valley locations 
-  (Community Medical Centers, Kaiser, CVS, Walgreens, county health departments)
 - Always recommend consulting a healthcare provider for medical decisions
 - For high-risk situations, emphasize N95 masks, avoiding soil disturbance, 
   staying indoors during dust storms
@@ -553,15 +599,34 @@ GUIDELINES:
 Keep responses under 200 words. Be direct and helpful."""
 
     try:
-        chat_session = model.start_chat(history=[])
         response = model.generate_content(
             f"{system_prompt}\n\nUser question: {req.message}"
         )
+
+        # Extract sources from grounding metadata if available
+        sources = ["SporeRisk prediction model"]
+        if needs_search:
+            sources.append("Google Search (live healthcare data)")
+            # Try to extract grounding sources
+            try:
+                if hasattr(response, 'candidates') and response.candidates:
+                    candidate = response.candidates[0]
+                    grounding = getattr(candidate, 'grounding_metadata', None)
+                    if grounding and hasattr(grounding, 'grounding_chunks'):
+                        for chunk in grounding.grounding_chunks:
+                            if hasattr(chunk, 'web') and hasattr(chunk.web, 'uri'):
+                                sources.append(chunk.web.uri)
+            except Exception:
+                pass
+        else:
+            sources.append("Open-Meteo environmental data")
+
         return ChatResponse(
             reply=response.text,
-            sources=["SporeRisk prediction model", "Open-Meteo environmental data"],
+            sources=sources,
         )
     except Exception as e:
+        print(f"Gemini chat error: {e}")
         return _fallback_chat(req.message, county, error=str(e))
 
 
