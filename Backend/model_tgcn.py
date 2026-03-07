@@ -1,5 +1,5 @@
 """
-SporaSync - T-GCN: Temporal Graph Convolutional Network
+SporeRisk - T-GCN: Temporal Graph Convolutional Network
 =========================================================
 Combines GNN (spatial: county-to-county influence) with
 LSTM (temporal: multi-month memory) for Valley Fever prediction.
@@ -9,7 +9,7 @@ TWO IMPLEMENTATIONS:
   2. PyTorch + PyG (uncomment at bottom — run on your own machines)
 
 Run:  python model_tgcn.py
-Input:  sporasync_master.csv
+Input:  sporerisk_master.csv
 Output: tgcn_predictions.csv, prints evaluation metrics
 
 Architecture:
@@ -83,7 +83,7 @@ def build_adjacency_matrix():
 # DATA PREPARATION
 # ============================================================
 
-def prepare_sequences(csv_path="sporasync_master_corrected.csv", window=6):
+def prepare_sequences(csv_path="sporerisk_master_corrected.csv", window=6):
     """
     Converts the daily CSV into monthly sequences for the T-GCN.
     
@@ -460,7 +460,7 @@ def train_tgcn(X_windows, y_windows, A_hat, epochs=60, hidden_dim=16):
 # ============================================================
 
 def evaluate_and_save(all_preds, all_true, y_mean, y_std, split,
-                      csv_path="sporasync_master_corrected.csv"):
+                      csv_path="sporerisk_master_corrected.csv"):
     """
     Denormalize predictions, compute metrics, save results.
     """
@@ -519,7 +519,7 @@ def evaluate_and_save(all_preds, all_true, y_mean, y_std, split,
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("  SPORASYNC - T-GCN (LSTM + GNN)")
+    print("  SPORERISK - T-GCN (LSTM + GNN)")
     print("  Spatio-Temporal Valley Fever Prediction")
     print("=" * 60)
     
@@ -529,7 +529,7 @@ if __name__ == "__main__":
     
     # Prepare sequences
     X, y, y_mean, y_std, scaler, features = prepare_sequences(
-        csv_path="sporasync_master_corrected.csv",
+        csv_path="sporerisk_master_corrected.csv",
         window=6  # 6-month lookback
     )
     

@@ -1,5 +1,5 @@
 """
-SporaSync — Scraper (Steps 1, 2, 3 only)
+SporeRisk — Scraper (Steps 1, 2, 3 only)
 ==========================================
 Pulls raw data from Open-Meteo, EPA AQS, and CDPH.
 Saves three clean CSVs to the data/ folder:
@@ -282,7 +282,7 @@ def collect_cases():
 def run():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     print("=" * 60)
-    print("  SporaSync Scraper — Steps 1, 2, 3")
+    print("  SporeRisk Scraper — Steps 1, 2, 3")
     print(f"  Date range: {START_DATE} → {END_DATE}")
     print(f"  Counties:   {len(COUNTIES)}")
     print("=" * 60)

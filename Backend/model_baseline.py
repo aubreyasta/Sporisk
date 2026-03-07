@@ -1,11 +1,11 @@
 """
-SporaSync - Model Baseline: Random Forest
+SporeRisk - Model Baseline: Random Forest
 ==========================================
 Aggregates daily data → monthly, trains a Random Forest,
 evaluates with cross-validation, and saves predictions.
 
 Run:  python model_baseline.py
-Input:  sporasync_master.csv
+Input:  sporerisk_master.csv
 Output: baseline_predictions.csv, prints evaluation metrics
 """
 
@@ -23,7 +23,7 @@ warnings.filterwarnings("ignore")
 # STEP 1: Load and aggregate to monthly
 # ============================================================
 
-def load_and_aggregate(csv_path="sporasync_master_corrected.csv"):
+def load_and_aggregate(csv_path="sporerisk_master_corrected.csv"):
     """
     Takes the daily master CSV and collapses it to monthly rows.
     
@@ -288,12 +288,12 @@ def save_predictions(monthly, y_pred, output_path="baseline_predictions.csv"):
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("  SPORASYNC - Random Forest Baseline")
+    print("  SPORERISK - Random Forest Baseline")
     print("  Valley Fever Risk Prediction")
     print("=" * 60)
     
     # Load and prepare data
-    monthly = load_and_aggregate("sporasync_master_corrected.csv")
+    monthly = load_and_aggregate("sporerisk_master_corrected.csv")
     monthly = engineer_features(monthly)
     
     # Train and evaluate
