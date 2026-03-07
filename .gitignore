@@ -1,0 +1,36 @@
+# Environment
+.env
+.env.local
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+
+# Data (too large for git)
+data/*.csv
+*.csv
+!Backend/baseline_predictions.csv
+!Backend/tgcn_predictions.csv
+
+# Scheduler state
+scheduler_state.json
+scheduler.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Node (if you add a frontend)
+node_modules/
