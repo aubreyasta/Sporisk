@@ -1,0 +1,18 @@
+# ─── Secrets (NEVER push these) ───
+.streamlit/secrets.toml
+*.env
+.env.local
+
+# ─── Python ───
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+
+# ─── OS junk ───
+.DS_Store
+Thumbs.db
+
+# ─── IDEs ───
+.vscode/
+.idea/
