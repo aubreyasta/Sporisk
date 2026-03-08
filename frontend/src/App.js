@@ -332,7 +332,16 @@ function CaliforniaMap({ selectedCounty, riskByCounty, onCountyClick, mapMode, v
     );
     if (!selectedCounty) { map.flyTo(CA_CENTER, 6, { duration:0.8 }); return; }
     const feat = geoDataRef.current.features.find(f => f.properties.name === selectedCounty);
-    if (feat) map.flyToBounds(L.geoJSON(feat).getBounds(), { padding:[28,28], maxZoom:9, duration:0.9 });
+    if (feat) {
+      // paddingTopLeft/BottomRight accounts for bottom sheet covering lower half of map
+      // This pushes the county centroid into the visible upper portion of the screen
+      map.flyToBounds(L.geoJSON(feat).getBounds(), {
+        paddingTopLeft:    [28, 28],
+        paddingBottomRight:[28, Math.floor(window.innerHeight * 0.45)],
+        maxZoom: 9,
+        duration: 0.9,
+      });
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCounty, riskByCounty]);
 
@@ -423,7 +432,7 @@ function RiskIndexPanel({ detail, env, riskLevel }) {
   // NOT used in the Gpot/Erisk calculation (those use lagged values)
   const sm   = env?.soil_moisture;
   const temp = env?.temperature_c;
-  const pr   = env?.precipitation_mm;
+  const pr   = env?.precip_daily_mm ?? env?.precipitation_mm;  // daily total, not current-hour
   const pm10 = env?.pm10_ugm3;
   const wind = env?.wind_speed_kmh;
   const vars = [
@@ -989,7 +998,7 @@ export default function App() {
               <StatCard label="Wind"        value={env?.wind_speed_kmh!=null?`${env.wind_speed_kmh.toFixed(0)} km/h`:null}  warn={env?.wind_speed_kmh>15}   sub="dispersal: >15 km/h"/>
               <StatCard label="PM10 Dust"   value={env?.pm10_ugm3!=null?`${env.pm10_ugm3.toFixed(0)} µg/m³`:null}           warn={env?.pm10_ugm3>35}         sub="high: >35 µg/m³"/>
               <StatCard label="Temperature" value={env?.temperature_c!=null?`${env.temperature_c.toFixed(1)}°C`:null}        warn={env?.temperature_c>35}     sub="spore-active: 20–40°C"/>
-              <StatCard label="Precip"      value={env?.precipitation_mm!=null?`${env.precipitation_mm.toFixed(1)} mm`:null} warn={env?.precipitation_mm===0} sub="0 mm = dry soil risk"/>
+              <StatCard label="Precip (today)" value={pr!=null?`${pr.toFixed(1)} mm`:null} warn={pr===0} sub="0 mm = dry soil risk"/>
             </div>
 
             {/* AI Risk Summary */}

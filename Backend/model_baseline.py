@@ -315,7 +315,7 @@ def save_predictions(monthly, y_pred, output_path="baseline_predictions.csv"):
         t6n   = _norm(row.get("tmax_lag6"),    *tmax6_range)
         p18n  = _norm(row.get("precip_lag18"), *p18_range)
 
-        gpot = 0.35 * sm6n + 0.20 * t6n + 0.30 * p18n
+        gpot = (0.35 * sm6n + 0.20 * t6n + 0.30 * p18n) / 0.85  # normalize: weights sum to 0.85
 
         # ── Exposure Risk ──
         pm10n   = _norm(row.get("pm10_lag1"),          *pm10l_range)
@@ -323,7 +323,7 @@ def save_predictions(monthly, y_pred, output_path="baseline_predictions.csv"):
         windn   = _norm(row.get("wind_roll3"),          *wind3_range)
         tmaxn   = _norm(row.get("tmax_lag1"),           *tmax1_range)
 
-        erisk = 0.25 * pm10n + 0.15 * (1 - sm_now) + 0.05 * windn + 0.20 * tmaxn
+        erisk = (0.25 * pm10n + 0.15 * (1 - sm_now) + 0.05 * windn + 0.20 * tmaxn) / 0.65  # normalize: weights sum to 0.65
 
         score = round(gpot * erisk * 100, 2)
 
