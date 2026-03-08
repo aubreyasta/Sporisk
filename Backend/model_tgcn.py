@@ -16,6 +16,7 @@ Architecture:
   Input → GCN Layer → LSTM Cell → Dense → Sigmoid → Risk Score
 """
 
+import os
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
@@ -83,7 +84,7 @@ def build_adjacency_matrix():
 # DATA PREPARATION
 # ============================================================
 
-def prepare_sequences(csv_path="sporerisk_master_corrected.csv", window=6):
+def prepare_sequences(csv_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "sporerisk_master_corrected.csv"), window=6):
     """
     Converts the daily CSV into monthly sequences for the T-GCN.
     
@@ -494,22 +495,89 @@ def evaluate_and_save(all_preds, all_true, y_mean, y_std, split,
         c_mae = mean_absolute_error(county_true, county_pred)
         print(f"  {county:15s} {county_true.mean():12.1f} {county_pred.mean():14.1f} {c_mae:8.1f}")
     
-    # Save predictions
+    # ── Convert predicted cases → Sporisk-equivalent risk tier ──────────────
+    # The T-GCN predicts case counts, not a Gpot×Erisk score. To make its
+    # output comparable to the Sporisk index we use county-relative historical
+    # percentiles: if this month's predicted cases are in the top 25% for that
+    # county, that's "Very High" — matching the biological severity scale.
+    # We also compute a normalized 0-100 pseudo-score so the frontend can
+    # display T-GCN predictions on the same axis as baseline_predictions.csv.
+    #
+    # NOTE: This is a case-count → severity mapping, NOT a Gpot×Erisk
+    # computation. The T-GCN learns the full weather→cases relationship
+    # end-to-end so Gpot/Erisk components are implicit, not explicit.
+
+    # Build per-county case history for percentile thresholds
+    # (use all true_real values as the reference distribution)
+    county_case_history = {}
+    for ci, county in enumerate(COUNTIES):
+        county_case_history[county] = true_real[:, ci]
+
+    def cases_to_sporisk_tier(predicted, county):
+        """
+        Map predicted case count to risk tier using county percentiles,
+        then return a pseudo-score scaled to 0-100.
+
+        Percentile thresholds:
+          < p25  → Low        → pseudo-score: predicted/p25 * 3        (0–3)
+          < p50  → Moderate   → pseudo-score: 3 + (pred-p25)/(p50-p25)*5   (3–8)
+          < p75  → High       → pseudo-score: 8 + (pred-p50)/(p75-p50)*7   (8–15)
+          ≥ p75  → Very High  → pseudo-score: 15 + min((pred-p75)/p75*10,10)(15–25)
+
+        These bands match the Sporisk fixed thresholds (<3/3-8/8-15/≥15)
+        so tiers are directly comparable between models.
+        """
+        hist = county_case_history[county]
+        p25, p50, p75 = np.percentile(hist, 25), np.percentile(hist, 50), np.percentile(hist, 75)
+
+        if predicted < p25:
+            tier = "Low"
+            score = (predicted / max(p25, 0.1)) * 3
+        elif predicted < p50:
+            tier = "Moderate"
+            score = 3 + ((predicted - p25) / max(p50 - p25, 0.1)) * 5
+        elif predicted < p75:
+            tier = "High"
+            score = 8 + ((predicted - p50) / max(p75 - p50, 0.1)) * 7
+        else:
+            tier = "Very High"
+            score = 15 + min(((predicted - p75) / max(p75, 0.1)) * 10, 10)
+
+        return tier, round(max(0.0, score), 2)
+
+    # Save predictions with tier and pseudo-score
     rows = []
     for t in range(len(all_preds)):
         for ci, county in enumerate(COUNTIES):
+            pred = preds_real[t, ci]
+            tier, pseudo_score = cases_to_sporisk_tier(pred, county)
             rows.append({
-                "county": county,
-                "test_sample": t,
-                "actual_cases": true_real[t, ci],
-                "predicted_cases": preds_real[t, ci],
-                "residual": true_real[t, ci] - preds_real[t, ci]
+                "county":           county,
+                "test_sample":      t,
+                "actual_cases":     true_real[t, ci],
+                "predicted_cases":  pred,
+                "residual":         true_real[t, ci] - pred,
+                # Sporisk-equivalent fields so API/frontend can treat both
+                # models consistently. Label clearly as case-derived.
+                "risk_score":       pseudo_score,   # 0–100, case-count derived
+                "predicted_risk":   tier,           # Low/Moderate/High/Very High
+                "score_method":     "case_percentile",  # NOT Gpot×Erisk
             })
-    
+
     results = pd.DataFrame(rows)
-    results.to_csv("tgcn_predictions.csv", index=False)
+    _out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tgcn_predictions.csv")
+    results.to_csv(_out, index=False)
+    print(f"\n  Saved → {_out}")
     print(f"\n  Saved → tgcn_predictions.csv")
-    
+    print(f"  Columns: {list(results.columns)}")
+    print(f"\n  T-GCN Risk Tier Distribution (case-percentile method):")
+    for tier in ["Low", "Moderate", "High", "Very High"]:
+        n = (results["predicted_risk"] == tier).sum()
+        pct = n / len(results) * 100
+        print(f"    {tier:12s}: {n:>4} rows ({pct:.1f}%)")
+    print(f"\n  NOTE: risk_score here is case-count → percentile derived,")
+    print(f"  NOT Gpot×Erisk. score_method='case_percentile' marks this.")
+
     return rmse, mae, r2
 
 
@@ -529,7 +597,7 @@ if __name__ == "__main__":
     
     # Prepare sequences
     X, y, y_mean, y_std, scaler, features = prepare_sequences(
-        csv_path="sporerisk_master_corrected.csv",
+        csv_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "sporerisk_master_corrected.csv"),
         window=6  # 6-month lookback
     )
     

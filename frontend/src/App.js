@@ -147,8 +147,8 @@ function CircularRiskGauge({ riskScore, riskLevel, county, size=220 }) {
       {county ? (
         <>
           <text x={cx} y={cy-20} textAnchor="middle" fontSize={8.5} fill="rgba(255,255,255,0.55)" fontFamily="system-ui" fontWeight={600}>{county.toUpperCase()} COUNTY</text>
-          <text x={cx} y={cy+6}  textAnchor="middle" fontSize={36}  fill="#fff"   fontFamily="system-ui" fontWeight={900}>{riskScore ?? "?"}</text>
-          <text x={cx} y={cy+22} textAnchor="middle" fontSize={8}   fill={color}  fontFamily="system-ui" fontWeight={700}>/ 4</text>
+          <text x={cx} y={cy+6}  textAnchor="middle" fontSize={36}  fill="#fff"   fontFamily="system-ui" fontWeight={900}>{riskScore!=null ? (Number.isInteger(riskScore)?riskScore:riskScore.toFixed(1)) : "?"}</text>
+          <text x={cx} y={cy+22} textAnchor="middle" fontSize={8}   fill={color}  fontFamily="system-ui" fontWeight={700}>/100</text>
           <text x={cx} y={cy+40} textAnchor="middle" fontSize={12}  fill={color}  fontFamily="system-ui" fontWeight={800}>{riskLevel || "…"}</text>
         </>
       ) : (
@@ -173,7 +173,7 @@ function MiniGauge({ riskScore, riskLevel, size=72 }) {
         strokeDasharray={circ} strokeDashoffset={offset} transform={`rotate(-90 ${cx} ${cy})`}
         style={{transition:"stroke-dashoffset 1s ease",filter:`drop-shadow(0 0 4px ${color}55)`}}/>
       <text x={cx} y={cy+5}  textAnchor="middle" fontSize={16} fontWeight={900} fill="#1e293b" fontFamily="system-ui">{riskScore ?? "?"}</text>
-      <text x={cx} y={cy+16} textAnchor="middle" fontSize={7}  fill={color}     fontFamily="system-ui" fontWeight={700}>/4</text>
+      <text x={cx} y={cy+16} textAnchor="middle" fontSize={7}  fill={color}     fontFamily="system-ui" fontWeight={700}>/100</text>
     </svg>
   );
 }
@@ -408,54 +408,33 @@ function CaliforniaMap({ selectedCounty, riskByCounty, onCountyClick, mapMode, v
 function RiskIndexPanel({ detail, env, riskLevel }) {
   const pal = getLightPal(riskLevel);
 
-  const n = (v, lo, hi) => v!=null ? Math.max(0, Math.min(1, (v-lo)/(hi-lo))) : null;
-  const iv = (v, lo, hi) => v!=null ? Math.max(0, Math.min(1, 1-(v-lo)/(hi-lo))) : null;
-  const fmt = v => v!=null ? v.toFixed(2) : "—";
+  // ── Use values computed by the backend (api.py → model_baseline.py) ──
+  // Gpot and Erisk require LAGGED inputs (6mo, 18mo ago) that the live
+  // env API call cannot provide. The backend has access to the full historical
+  // dataset and computes these correctly using MinMax-normalized lag features.
+  // Do NOT recompute from today's live weather — that would use wrong variables.
+  const gPot     = detail?.gpot  ?? null;   // Growth Potential (0–0.85)
+  const eRisk    = detail?.erisk ?? null;   // Exposure Risk (0–0.65)
+  const rawScore = detail?.risk_score != null
+    ? detail.risk_score.toFixed(1)
+    : (gPot != null && eRisk != null ? (gPot * eRisk * 100).toFixed(1) : "—");
 
+  // Current live env values — shown in the table for context only,
+  // NOT used in the Gpot/Erisk calculation (those use lagged values)
   const sm   = env?.soil_moisture;
   const temp = env?.temperature_c;
   const pr   = env?.precipitation_mm;
   const pm10 = env?.pm10_ugm3;
   const wind = env?.wind_speed_kmh;
-
-  const smG   = fmt(iv(sm, 0, 0.28));
-  const smE   = fmt(iv(sm, 0, 0.22));
-  const tmpG  = temp!=null ? fmt(Math.min(1, Math.max(0, temp>=15&&temp<=45 ? n(temp,5,42) : 0.15))) : "—";
-  const tmpE  = temp!=null ? fmt(n(temp,10,48)) : "—";
-  const prG   = pr!=null ? (pr===0 ? "0.00" : fmt(iv(pr,0,55))) : "—";
-  const pm10E = fmt(n(pm10,0,65));
-  const windE = fmt(n(wind,0,55));
-
-  const numOrNull = v => (v && v!=="—") ? parseFloat(v) : null;
-  const gPotComputed = (() => {
-    const vals = [numOrNull(smG), numOrNull(tmpG), numOrNull(prG)].filter(v=>v!=null);
-    return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
-  })();
-  const eRiskComputed = (() => {
-    const vals = [numOrNull(smE), numOrNull(tmpE), numOrNull(pm10E), numOrNull(windE)].filter(v=>v!=null);
-    return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
-  })();
-
-  const gPot  = detail?.g_pot ?? gPotComputed;
-  const eRisk = detail?.e_risk ?? eRiskComputed;
-  const rawScore = gPot != null && eRisk != null ? (gPot * eRisk).toFixed(2) : detail?.risk_score?.toFixed(2);
-
   const vars = [
-    { name:"Soil Moisture",  val: sm!=null ? `${(sm*100).toFixed(1)}%` : "—",    gPot:smG,  eRisk:smE  },
-    { name:"Temperature",    val: temp!=null ? `${temp.toFixed(1)}°C` : "—",     gPot:tmpG, eRisk:tmpE },
-    { name:"Precipitation",  val: pr!=null ? `${pr.toFixed(0)} mm` : "—",        gPot:prG,  eRisk:"—"  },
-    { name:"PM10 (Dust)",    val: pm10!=null ? `${pm10.toFixed(1)} µg/m³` : "—", gPot:"—",  eRisk:pm10E},
-    { name:"Wind Speed",     val: wind!=null ? `${wind.toFixed(1)} km/h` : "—",  gPot:"—",  eRisk:windE},
+    { name:"Soil Moisture (now)",  val: sm!=null   ? `${(sm*100).toFixed(1)}%`   : "—", note:"Erisk: aridity proxy" },
+    { name:"Temperature (now)",    val: temp!=null  ? `${temp.toFixed(1)}°C`      : "—", note:"context only"        },
+    { name:"Precipitation (now)",  val: pr!=null    ? `${pr.toFixed(0)} mm`       : "—", note:"context only"        },
+    { name:"PM10 Dust (now)",      val: pm10!=null  ? `${pm10.toFixed(1)} µg/m³` : "—", note:"Erisk: spore proxy"  },
+    { name:"Wind Speed (now)",     val: wind!=null  ? `${wind.toFixed(1)} km/h`  : "—", note:"Erisk: transport"    },
+    { name:"SM lag 6mo ✦",        val: "—",                                              note:"Gpot: #1 predictor"  },
+    { name:"Precip lag 1.5yr ✦",  val: "—",                                              note:"Gpot: drought signal" },
   ];
-
-  const numStyle = (v) => {
-    if (v==="—") return { color:"#94a3b8" };
-    const n = parseFloat(v);
-    if (isNaN(n)) return { color:"#94a3b8" };
-    if (n >= 0.7) return { color:"#dc2626", fontWeight:800 };
-    if (n >= 0.4) return { color:"#d97706", fontWeight:700 };
-    return { color:"#16a34a", fontWeight:600 };
-  };
 
   return (
     <div style={{ marginBottom:16 }}>
@@ -486,29 +465,31 @@ function RiskIndexPanel({ detail, env, riskLevel }) {
         ))}
       </div>
 
-      {/* Variable table */}
+      {/* Variable table — live env values shown for context; Gpot/Erisk computed by backend from lagged data */}
+      <div style={{ fontSize:8, color:"#94a3b8", marginBottom:6, lineHeight:1.5 }}>
+        ✦ Lag variables (6mo / 18mo) are computed by the backend from historical data.<br/>
+        Current env values shown below are context only — not used in Gpot/Erisk.
+      </div>
       <table style={{ width:"100%", borderCollapse:"collapse" }}>
         <thead>
           <tr style={{ borderBottom:"1px solid #e2e8f0" }}>
-            <th style={{ textAlign:"left",  fontSize:8.5, fontWeight:700, color:"#94a3b8", padding:"4px 0",   letterSpacing:0.8 }}>VARIABLE</th>
-            <th style={{ textAlign:"right", fontSize:8.5, fontWeight:700, color:"#94a3b8", padding:"4px 4px" }}>VALUE</th>
-            <th style={{ textAlign:"right", fontSize:8.5, fontWeight:700, color:"#d97706", padding:"4px 4px" }}>G_POT</th>
-            <th style={{ textAlign:"right", fontSize:8.5, fontWeight:700, color:"#dc2626", padding:"4px 0"   }}>E_RISK</th>
+            <th style={{ textAlign:"left",  fontSize:8.5, fontWeight:700, color:"#94a3b8", padding:"4px 0", letterSpacing:0.8 }}>VARIABLE</th>
+            <th style={{ textAlign:"right", fontSize:8.5, fontWeight:700, color:"#94a3b8", padding:"4px 4px" }}>CURRENT</th>
+            <th style={{ textAlign:"right", fontSize:8.5, fontWeight:700, color:"#64748b", padding:"4px 0" }}>PHASE</th>
           </tr>
         </thead>
         <tbody>
-          {vars.map((v,i)=>(
+          {vars.filter(v=>v.val!=="—" || v.note).map((v,i)=>(
             <tr key={i} style={{ borderBottom:"1px solid #f1f5f9" }}>
-              <td style={{ fontSize:12, fontWeight:600, color:"#1e293b",  padding:"7px 0"  }}>{v.name}</td>
-              <td style={{ fontSize:11, color:"#64748b",                  padding:"7px 4px", textAlign:"right" }}>{v.val}</td>
-              <td style={{ fontSize:11, padding:"7px 4px", textAlign:"right", ...numStyle(v.gPot)  }}>{v.gPot}</td>
-              <td style={{ fontSize:11, padding:"7px 0",   textAlign:"right", ...numStyle(v.eRisk) }}>{v.eRisk}</td>
+              <td style={{ fontSize:11, fontWeight:600, color:"#1e293b", padding:"6px 0" }}>{v.name}</td>
+              <td style={{ fontSize:11, color:"#64748b", padding:"6px 4px", textAlign:"right" }}>{v.val!=="—"?v.val:"—"}</td>
+              <td style={{ fontSize:9,  color:"#94a3b8", padding:"6px 0",  textAlign:"right" }}>{v.note}</td>
             </tr>
           ))}
         </tbody>
       </table>
       <div style={{ fontSize:8.5, color:"#94a3b8", marginTop:8, lineHeight:1.5 }}>
-        Weights derived from Multivariable Negative Binomial Regression (MNBR) adjusted IRRs. Validated against Random Forest feature importances (sm_lag6 = 22.3% #1).
+        Gpot/Erisk weights from MNBR aIRRs, validated by Random Forest (sm_lag6 = 22.3% importance, #1 feature).
       </div>
     </div>
   );
