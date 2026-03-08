@@ -257,31 +257,79 @@ def save_predictions(monthly, y_pred, output_path="baseline_predictions.csv"):
     results = monthly[["county", "year", "month", "monthly_cases", "lat", "lon"]].copy()
     results["predicted_cases"] = y_pred
     results["residual"] = results["monthly_cases"] - results["predicted_cases"]
-    
-    # Assign risk using county-relative percentile thresholds so that
-    # each county's seasonal variation is captured correctly.
-    # This ensures Kern (high-volume county) shows High/Very High in peak months
-    # rather than always being "Moderate" under global thresholds.
-    risk_labels = []
-    for _, row in results.iterrows():
-        county_preds = results.loc[results["county"] == row["county"], "predicted_cases"]
-        p = row["predicted_cases"]
-        q25 = county_preds.quantile(0.25)
-        q50 = county_preds.quantile(0.50)
-        q75 = county_preds.quantile(0.75)
-        if p <= q25:
-            risk_labels.append("Low")
-        elif p <= q50:
-            risk_labels.append("Moderate")
-        elif p <= q75:
-            risk_labels.append("High")
-        else:
-            risk_labels.append("Very High")
-    results["predicted_risk"] = risk_labels
 
-    # Numeric risk score for charting (1=Low, 2=Moderate, 3=High, 4=Very High)
-    score_map = {"Low": 1, "Moderate": 2, "High": 3, "Very High": 4}
-    results["risk_score"] = results["predicted_risk"].map(score_map)
+    # ----------------------------------------------------------------
+    # SPORISK BIOLOGICAL RISK INDEX  (Gpot × Erisk × 100)
+    # Replaces the old county-relative percentile bucketing (1–4).
+    # See: https://sporisk.vercel.app — Algorithm section
+    #
+    # Normalization ranges derived from 2020-2026 Central Valley data.
+    # ----------------------------------------------------------------
+    NORM_RANGES = {
+        "sm":     (0.03, 0.45),   # soil moisture m³/m³
+        "tmax":   (5.0,  45.0),   # °C
+        "precip": (0.0,  200.0),  # mm (monthly total)
+        "pm10":   (0.0,  150.0),  # µg/m³
+        "wind":   (0.0,  60.0),   # km/h
+    }
+
+    def _norm(val, lo, hi):
+        """Clamp-normalize a value to [0, 1]. NaN → 0.5 (midpoint impute)."""
+        if val is None or (isinstance(val, float) and np.isnan(val)):
+            return 0.5
+        return max(0.0, min(1.0, (val - lo) / (hi - lo)))
+
+    def compute_sporisk(row):
+        """
+        Compute Gpot, Erisk, and the 0–100 risk score for one monthly row.
+        Uses lag columns already engineered by engineer_features().
+        """
+        # --- Growth Potential (was the environment right to grow fungal biomass?) ---
+        sm6n  = _norm(row.get("sm_lag6"),     *NORM_RANGES["sm"])
+        t6n   = _norm(row.get("tmax_lag6"),   *NORM_RANGES["tmax"])
+        p18n  = _norm(row.get("precip_lag18"), *NORM_RANGES["precip"])
+
+        gpot = 0.35 * sm6n + 0.20 * t6n + 0.30 * p18n
+        # NOTE: weights sum to 0.85, not 1.0 — 0.15 reserved for future
+        # variables (e.g. soil pH, competing microbes). Matches theory page.
+
+        # --- Exposure/Dispersal Risk (are spores actually getting airborne?) ---
+        pm10n  = _norm(row.get("pm10_lag1"),        *NORM_RANGES["pm10"])
+        sm_now = _norm(row.get("soil_moisture_m3m3"), *NORM_RANGES["sm"])
+        windn  = _norm(row.get("wind_roll3"),        *NORM_RANGES["wind"])
+        tmaxn  = _norm(row.get("tmax_lag1"),         *NORM_RANGES["tmax"])
+
+        erisk = 0.25 * pm10n + 0.15 * (1 - sm_now) + 0.05 * windn + 0.20 * tmaxn
+
+        score = round(gpot * erisk * 100, 2)
+
+        # Tier thresholds calibrated to Kern historical table on theory page:
+        # normal years avg 8–12, 2024 record year peaked at 12+
+        if score < 3:
+            tier = "Low"
+        elif score < 8:
+            tier = "Moderate"
+        elif score < 15:
+            tier = "High"
+        else:
+            tier = "Very High"
+
+        return gpot, erisk, score, tier
+
+    gpot_vals, erisk_vals, score_vals, tier_vals = [], [], [], []
+    monthly_dict = monthly.to_dict("records")
+
+    for row_dict in monthly_dict:
+        gpot, erisk, score, tier = compute_sporisk(row_dict)
+        gpot_vals.append(round(gpot, 4))
+        erisk_vals.append(round(erisk, 4))
+        score_vals.append(score)
+        tier_vals.append(tier)
+
+    results["gpot"]          = gpot_vals
+    results["erisk"]         = erisk_vals
+    results["risk_score"]    = score_vals   # 0–100 continuous (was 1–4 integer)
+    results["predicted_risk"] = tier_vals   # "Low"/"Moderate"/"High"/"Very High"
     
     results.to_csv(output_path, index=False)
     print(f"\n  Saved predictions → {output_path}")

@@ -189,6 +189,13 @@ def get_latest_risk(county: str) -> dict:
     county_data = county_data.sort_values(["year", "month"], ascending=False)
     latest = county_data.iloc[0]
 
+    # risk_score is now the continuous 0–100 Sporisk index (Gpot × Erisk × 100).
+    # gpot and erisk are the two biological phase scores (each 0–1).
+    # predicted_risk is the tier label derived from risk_score.
+    risk_score = float(latest["risk_score"]) if "risk_score" in latest else None
+    gpot       = float(latest["gpot"])       if "gpot"       in latest else None
+    erisk      = float(latest["erisk"])      if "erisk"      in latest else None
+
     return {
         "county": county,
         "fips": COUNTY_META[county]["fips"],
@@ -197,6 +204,9 @@ def get_latest_risk(county: str) -> dict:
         "year": int(latest["year"]),
         "month": int(latest["month"]),
         "risk_level": latest["predicted_risk"],
+        "risk_score": round(risk_score, 2) if risk_score is not None else None,
+        "gpot":  round(gpot,  4) if gpot  is not None else None,
+        "erisk": round(erisk, 4) if erisk is not None else None,
         "predicted_cases": round(float(latest["predicted_cases"]), 1),
         "monthly_cases": round(float(latest["monthly_cases"]), 1),
     }
@@ -302,8 +312,17 @@ def generate_risk_summary(county: str, risk_data: dict, env_stats: dict) -> dict
     """
     model = get_gemini_client()
     risk_level = risk_data.get("risk_level", "Unknown")
-    risk_score = {"Low": 1, "Moderate": 2, "High": 3, "Very High": 4}.get(risk_level, 2)
-    is_high = risk_score >= 3
+    risk_score = risk_data.get("risk_score")   # 0–100 continuous Sporisk index
+    gpot       = risk_data.get("gpot")
+    erisk      = risk_data.get("erisk")
+
+    # High threshold: score >= 8 (Moderate+) → elevated; >= 15 (High+) → urgent
+    is_high = (risk_score is not None and risk_score >= 8) or risk_level in ("High", "Very High")
+
+    score_display = f"{risk_score:.1f}/100" if risk_score is not None else "N/A"
+    component_display = ""
+    if gpot is not None and erisk is not None:
+        component_display = f" (Growth potential: {gpot:.2f}, Dispersal risk: {erisk:.2f})"
 
     if model:
         if is_high:
@@ -325,18 +344,21 @@ def generate_risk_summary(county: str, risk_data: dict, env_stats: dict) -> dict
 {tone_instruction}
 
 County: {county}
-Risk Level: {risk_level} (score {risk_score}/4)
+Risk Level: {risk_level} (Sporisk score: {score_display}{component_display})
+  - Growth Potential (Gpot): how favorable recent soil/rain conditions were for fungal growth (0–1)
+  - Dispersal Risk (Erisk): how favorable current conditions are for spores becoming airborne (0–1)
+  - Final score = Gpot × Erisk × 100
 Temperature: {env_stats.get('temperature_c', 'N/A')}°C
 Wind Speed: {env_stats.get('wind_speed_kmh', 'N/A')} km/h
 Precipitation: {env_stats.get('precipitation_mm', 'N/A')} mm
 PM10 Dust: {env_stats.get('pm10_ugm3', 'N/A')} µg/m³
 
 Return a JSON object with exactly two keys:
-- "bullets": array of 3-4 strings explaining WHY the risk is at this level
+- "bullets": array of 3-4 strings explaining WHY the risk is at this level, referencing Gpot/Erisk if helpful
 - "advice": array of 2-4 strings with specific actionable steps for residents
 
 No markdown. Example format:
-{{"bullets": ["Soil is critically dry...", "PM10 levels are elevated..."], "advice": ["Wear N95 mask outdoors", "Avoid agricultural areas today"]}}
+{{"bullets": ["Soil is critically dry...", "PM10 levels are elevated...", "Growth potential of 0.44 means last season's rain fed significant fungal biomass..."], "advice": ["Wear N95 mask outdoors", "Avoid agricultural areas today"]}}
 """
         try:
             response = model.generate_content(prompt)
@@ -463,7 +485,10 @@ def get_risk_by_location(
         "detected_county": county,
         "risk": risk,
         "risk_level": risk.get("risk_level") if risk else None,
-        "risk_score": {"Low": 1, "Moderate": 2, "High": 3, "Very High": 4}.get(risk.get("risk_level", ""), 0),
+        # risk_score is now the 0–100 continuous Sporisk index (Gpot × Erisk × 100)
+        "risk_score": risk.get("risk_score") if risk else None,
+        "gpot":  risk.get("gpot")  if risk else None,
+        "erisk": risk.get("erisk") if risk else None,
         "environment": env,
         "summary": summary_data.get("bullets", []),
         "advice": summary_data.get("advice", []),
@@ -487,7 +512,10 @@ def get_risk_by_county(county: str):
     return {
         "county": county_name,
         "risk_level": risk.get("risk_level") if risk else None,
-        "risk_score": {"Low": 1, "Moderate": 2, "High": 3, "Very High": 4}.get(risk.get("risk_level", ""), 0),
+        # risk_score is now the 0–100 continuous Sporisk index (Gpot × Erisk × 100)
+        "risk_score": risk.get("risk_score") if risk else None,
+        "gpot":  risk.get("gpot")  if risk else None,
+        "erisk": risk.get("erisk") if risk else None,
         "environment": env,
         "summary": summary_data.get("bullets", []),
         "advice": summary_data.get("advice", []),
@@ -525,17 +553,26 @@ def get_history(
         (baseline_df["year"] <= end_year)
     ].sort_values(["year", "month"])
 
-    score_map = {"Low": 1, "Moderate": 2, "High": 3, "Very High": 4}
+    score_map = {"Low": 1, "Moderate": 2, "High": 3, "Very High": 4}  # kept for legacy compat
     records = []
     for _, row in data.iterrows():
         risk_lvl = str(row["predicted_risk"]) if row["predicted_risk"] else "Low"
+        # Use the continuous Sporisk score if available, fall back to legacy integer
+        raw_score = row.get("risk_score")
+        if raw_score is not None and not (isinstance(raw_score, float) and np.isnan(raw_score)):
+            out_score = round(float(raw_score), 2)
+        else:
+            out_score = score_map.get(risk_lvl, 1)  # legacy fallback
+
         records.append({
             "year": int(row["year"]),
             "month": int(row["month"]),
             "monthly_cases": round(float(row["monthly_cases"]), 1),
             "predicted_cases": round(float(row["predicted_cases"]), 1),
             "predicted_risk": risk_lvl,
-            "risk_score": score_map.get(risk_lvl, 1),
+            "risk_score": out_score,
+            "gpot":  round(float(row["gpot"]),  4) if "gpot"  in row and not np.isnan(float(row["gpot"]  or 0)) else None,
+            "erisk": round(float(row["erisk"]), 4) if "erisk" in row and not np.isnan(float(row["erisk"] or 0)) else None,
         })
 
     return {
@@ -619,7 +656,9 @@ def get_ai_summary(county: str):
     return {
         "county": county_name,
         "risk_level": risk.get("risk_level"),
-        "risk_score": {"Low": 1, "Moderate": 2, "High": 3, "Very High": 4}.get(risk.get("risk_level", ""), 0),
+        "risk_score": risk.get("risk_score"),
+        "gpot":  risk.get("gpot"),
+        "erisk": risk.get("erisk"),
         "summary_bullets": summary_data.get("bullets", []),
         "advice": summary_data.get("advice", []),
         "environment": env,
@@ -649,7 +688,7 @@ def get_historical_insights(county: str):
     for yr, grp in data.groupby("year"):
         avg_c = grp["monthly_cases"].mean()
         max_c = grp["monthly_cases"].max()
-        high_risk = int((grp["risk_score"] >= 3).sum()) if "risk_score" in grp.columns else 0
+        high_risk = int((grp["risk_score"] >= 8).sum()) if "risk_score" in grp.columns else 0
         yearly_rows.append(f"  {int(yr)}: avg {avg_c:.0f} cases/mo, peak {max_c:.0f}, high-risk months: {high_risk}")
 
     yearly_summary = "\n".join(yearly_rows)
@@ -760,16 +799,25 @@ def get_env_history(
     county_env = env_df[env_df["county"] == county_name].sort_values(["year", "month"]).tail(months)
 
     # Merge in risk_score from baseline predictions
-    score_map = {"Low": 1, "Moderate": 2, "High": 3, "Very High": 4}
-    baseline_county = baseline_df[baseline_df["county"] == county_name][["year", "month", "predicted_risk", "risk_score"]]
+    baseline_county = baseline_df[baseline_df["county"] == county_name][["year", "month", "predicted_risk", "risk_score", "gpot", "erisk"]]
 
     records = []
     for _, row in county_env.iterrows():
         yr, mo = int(row["year"]), int(row["month"])
         bl_match = baseline_county[(baseline_county["year"] == yr) & (baseline_county["month"] == mo)]
-        risk_score = int(bl_match["risk_score"].iloc[0]) if not bl_match.empty and "risk_score" in bl_match.columns else None
-        if risk_score is None and not bl_match.empty:
-            risk_score = score_map.get(str(bl_match["predicted_risk"].iloc[0]), 2)
+
+        risk_score = None
+        gpot_val   = None
+        erisk_val  = None
+        if not bl_match.empty:
+            raw = bl_match["risk_score"].iloc[0]
+            risk_score = round(float(raw), 2) if raw is not None and not np.isnan(float(raw)) else None
+            if "gpot" in bl_match.columns:
+                g = bl_match["gpot"].iloc[0]
+                gpot_val = round(float(g), 4) if g is not None and not np.isnan(float(g)) else None
+            if "erisk" in bl_match.columns:
+                e = bl_match["erisk"].iloc[0]
+                erisk_val = round(float(e), 4) if e is not None and not np.isnan(float(e)) else None
 
         records.append({
             "year": yr,
@@ -779,7 +827,9 @@ def get_env_history(
             "soil_moisture": round(float(row["soil_moisture"]), 4) if pd.notna(row["soil_moisture"]) else None,
             "wind_speed": round(float(row["wind_speed"]), 1) if pd.notna(row["wind_speed"]) else None,
             "pm10": round(float(row["pm10"]), 1) if "pm10" in row and pd.notna(row["pm10"]) else None,
-            "risk_score": risk_score,
+            "risk_score": risk_score,   # 0–100 continuous
+            "gpot":  gpot_val,
+            "erisk": erisk_val,
         })
 
     return {"county": county_name, "records": records}
