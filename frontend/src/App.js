@@ -132,6 +132,7 @@ const ZONE_ICONS = { farm: "🌾", school: "🏫", worksite: "🏗️" };
 const CLINIC_COLORS = { hospital: "#ef4444", clinic: "#2563eb" };
 
 // ── CircularRiskGauge (landing screen) ──────────────────────────────────────
+// eslint-disable-next-line no-unused-vars
 function CircularRiskGauge({ riskScore, riskLevel, county, size = 220 }) {
   const r = 80, cx = 100, cy = 100, circ = 2 * Math.PI * r;
   const pct = riskScore ? Math.min(1, riskScore / 25) : 0;  // 0–100 score, cap arc at 25 for visual
@@ -687,7 +688,7 @@ export default function App() {
   const [view, setView] = useState(() => sessionStorage.getItem("sr_seen") ? "map" : "landing");
   const [geoData, setGeoData] = useState(() => { try { const c = sessionStorage.getItem("sr_geo"); return c ? JSON.parse(c) : null; } catch { return null; } });
   const [geoLoading, setGeoLoading] = useState(!sessionStorage.getItem("sr_geo"));
-  const [geoError, setGeoError] = useState(null);
+  const [geoError, setGeoError] = useState(null); // eslint-disable-line no-unused-vars
 
   const [sel, setSel] = useState(null);
   const [sh, setSh] = useState(0);
@@ -812,7 +813,6 @@ export default function App() {
 
   // ── LANDING ────────────────────────────────────────────────────────────────
   if (view === "landing") {
-    const dp = getDarkPal(geoData?.risk_level || "Low");
     const rs = geoData?.risk_score || 0;
     const rl = geoData?.risk_level;
     const dc = geoData?.detected_county;
