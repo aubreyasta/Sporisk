@@ -8,12 +8,44 @@ import "./App.css";
 
 const API = process.env.REACT_APP_API_URL || "https://sporisk-backend-production.up.railway.app";
 
+// ── Dummy data fallback (used when backend is offline) ────────────────────────
+const DUMMY_COUNTIES = {
+  Fresno: { county: "Fresno", risk_level: "Moderate", risk_score: 6.2, gpot: 0.31, erisk: 0.20 },
+  Kern: { county: "Kern", risk_level: "High", risk_score: 11.4, gpot: 0.52, erisk: 0.22 },
+  Kings: { county: "Kings", risk_level: "Moderate", risk_score: 5.8, gpot: 0.29, erisk: 0.20 },
+  Madera: { county: "Madera", risk_level: "Low", risk_score: 2.1, gpot: 0.18, erisk: 0.12 },
+  Merced: { county: "Merced", risk_level: "Low", risk_score: 1.9, gpot: 0.15, erisk: 0.13 },
+  "San Joaquin": { county: "San Joaquin", risk_level: "Moderate", risk_score: 4.7, gpot: 0.27, erisk: 0.17 },
+  Stanislaus: { county: "Stanislaus", risk_level: "Low", risk_score: 2.4, gpot: 0.17, erisk: 0.14 },
+  Tulare: { county: "Tulare", risk_level: "High", risk_score: 9.8, gpot: 0.47, erisk: 0.21 },
+};
+const DUMMY_DETAIL = county => ({
+  county, ...DUMMY_COUNTIES[county],
+  environment: { soil_moisture: 0.14, temperature_c: 28.5, precip_daily_mm: 0, pm10_ugm3: 42, wind_speed_kmh: 18, precip_week_mm: 0.2 },
+  summary_bullets: [
+    "Risk index computed from historical environmental data (2020–2025).",
+    "Soil moisture 6-month lag and 18-month precipitation are the dominant predictors.",
+    "This is demonstration data — live backend currently offline.",
+  ],
+  advice: [
+    "Wear an N95 mask during outdoor activities, especially on windy days.",
+    "Avoid disturbing dry soil or being near construction sites.",
+    "Close windows and use HEPA filters during dust storms.",
+  ],
+});
+
+let _backendAlive = null; // null=unknown, true=alive, false=dead
+
 async function apiFetch(path) {
   try {
-    const res = await fetch(`${API}${path}`, { signal: AbortSignal.timeout(10000) });
+    const res = await fetch(`${API}${path}`, { signal: AbortSignal.timeout(8000) });
     if (!res.ok) throw new Error(`${res.status}`);
+    _backendAlive = true;
     return await res.json();
-  } catch { return null; }
+  } catch {
+    _backendAlive = false;
+    return null;
+  }
 }
 
 // Responsive breakpoint hook
@@ -719,15 +751,20 @@ export default function App() {
   const [apiReports, setApiReports] = useState(null);
   const [apiConnected, setApiConnected] = useState(false);
 
+  const [usingDummy, setUsingDummy] = useState(false);
   const [mapMode, setMapMode] = useState("normal");
   const [vulnZones, setVulnZones] = useState([]);
   const [clinicsData, setClinicsData] = useState([]);
   const [showReport, setShowReport] = useState(false);
   const [showSms, setShowSms] = useState(false);
 
-  // Geolocation
-  useEffect(() => {
-    if (geoData) return;
+  // Geolocation — manual, triggered by button
+  const [geoRequested, setGeoRequested] = useState(false);
+
+  const requestLocation = () => {
+    if (geoRequested || geoData) return;
+    setGeoRequested(true);
+    setGeoLoading(true);
     if (!navigator.geolocation) { setGeoError("Geolocation not supported"); setGeoLoading(false); return; }
     navigator.geolocation.getCurrentPosition(async pos => {
       const d = await apiFetch(`/risk?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`);
@@ -735,17 +772,26 @@ export default function App() {
       else setGeoError("County not in tracked area");
       setGeoLoading(false);
     }, () => { setGeoError("Location access denied"); setGeoLoading(false); }, { timeout: 8000, maximumAge: 300000 });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  };
 
-  // Counties list
+  // Counties list — fall back to dummy data if backend offline
   useEffect(() => {
     apiFetch("/counties").then(d => {
-      if (d?.counties) { setApiConnected(true); const m = {}; d.counties.forEach(c => { m[c.county] = c; }); setApiCounties(m); }
+      if (d?.counties) {
+        setApiConnected(true);
+        setUsingDummy(false);
+        const m = {};
+        d.counties.forEach(c => { m[c.county] = c; });
+        setApiCounties(m);
+      } else {
+        // Backend offline — use dummy data
+        setUsingDummy(true);
+        setApiCounties(DUMMY_COUNTIES);
+      }
     });
   }, []);
 
-  // County detail
+  // County detail — fall back to dummy when backend offline
   useEffect(() => {
     if (!sel) return;
     setApiDetail(null); setApiHistory(null); setApiSummary(null); setApiInsights(null); setApiEnvHistory(null); setApiReports(null);
@@ -757,7 +803,8 @@ export default function App() {
       apiFetch(`/env-history/${encodeURIComponent(sel)}`),
       apiFetch(`/reports/${encodeURIComponent(sel)}`),
     ]).then(([risk, hist, summ, ins, env, rep]) => {
-      if (risk) setApiDetail(risk);
+      if (risk) { setApiDetail(risk); }
+      else { setApiDetail(DUMMY_DETAIL(sel)); setUsingDummy(true); }
       if (hist) setApiHistory(hist);
       if (summ) setApiSummary(summ);
       if (ins) setApiInsights(ins);
@@ -817,7 +864,7 @@ export default function App() {
 
   useEffect(() => { ce.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs]);
 
-  const tap = c => { setSel(c); setSh(prev => prev > 0 ? prev : 1); };
+  const tap = c => { setSel(c); setSh(prev => prev > 0 ? prev : (isDesktop ? 2 : 1)); };
   const closeSheet = () => { setSh(0); setSel(null); };
   const goMap = county => { sessionStorage.setItem("sr_seen", "1"); setView("map"); if (county) { setSel(county); setSh(1); } };
 
@@ -847,9 +894,15 @@ export default function App() {
             </span>
           </div>
         ) : (
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 100, padding: "10px 18px" }}>
-            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", fontFamily: "'DM Sans',sans-serif" }}>Enable location for live risk</span>
-          </div>
+          <button
+            onClick={requestLocation}
+            className="pill-btn"
+            style={{ display: "inline-flex", alignItems: "center", gap: 9, background: "rgba(217,119,6,0.1)", border: "1px solid rgba(217,119,6,0.3)", borderRadius: 100, padding: "10px 20px", cursor: "pointer" }}
+          >
+            <span style={{ fontSize: 14 }}>📍</span>
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>Check My Risk</span>
+            <span style={{ fontSize: 10, color: "rgba(217,119,6,0.8)", fontFamily: "'DM Sans',sans-serif" }}>→</span>
+          </button>
         )}
       </div>
     );
@@ -857,7 +910,7 @@ export default function App() {
     const CTAButtons = () => (
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <button className="pill-btn" onClick={() => goMap(dc)} style={{ width: "100%", padding: "16px", borderRadius: 14, border: "none", background: isHigh ? "#dc2626" : "#d97706", color: "#fff", fontWeight: 800, fontSize: 15, cursor: "pointer", fontFamily: "'DM Sans',sans-serif", letterSpacing: 0.3, boxShadow: isHigh ? "0 4px 20px rgba(220,38,38,0.4)" : "0 4px 20px rgba(217,119,6,0.4)" }}>
-          {isHigh ? "⚠️ High Risk Detected — Launch App →" : "🗺️ Launch the App →"}
+          {isHigh ? "⚠️ High Risk Detected — Open the App →" : "🗺️ Open the App →"}
         </button>
         <div style={{ display: "flex", gap: 8 }}>
           <button className="pill-btn" onClick={() => { sessionStorage.setItem("sr_seen", "1"); setView("map"); setShowSms(true); }} style={{ flex: 1, padding: "11px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>📱 SMS Alerts</button>
@@ -1012,6 +1065,17 @@ export default function App() {
       .land-scroll::-webkit-scrollbar { width:4px; }
       .land-scroll::-webkit-scrollbar-track { background:transparent; }
       .land-scroll::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.12); border-radius:2px; }
+      /* Sheet slide-in */
+      @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+      @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes scaleIn { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+      @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+      .stat-card-anim { animation: slideUp 0.4s cubic-bezier(0.32,0.72,0,1) both; }
+      .sheet-anim { animation: slideUp 0.35s cubic-bezier(0.32,0.72,0,1) both; }
+      .fade-in { animation: fadeIn 0.5s ease both; }
+      .scale-in { animation: scaleIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+      .hover-lift { transition: transform 0.18s ease, box-shadow 0.18s ease; }
+      .hover-lift:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
     `;
 
     const particles = [
@@ -1041,7 +1105,7 @@ export default function App() {
               </div>
               <a href="https://sporisk.vercel.app" target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontFamily: "'DM Sans',sans-serif", textDecoration: "none", fontWeight: 500 }}>Theory page ↗</a>
               <button className="pill-btn" onClick={() => goMap(dc)} style={{ padding: "9px 22px", borderRadius: 10, border: "none", background: isHigh ? "#dc2626" : "#d97706", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "'DM Sans',sans-serif", letterSpacing: 0.3, boxShadow: isHigh ? "0 2px 16px rgba(220,38,38,0.4)" : "0 2px 16px rgba(217,119,6,0.4)" }}>
-                {isHigh ? "⚠️ Launch App →" : "🗺️ Launch the App →"}
+                {isHigh ? "⚠️ Open the App →" : "🗺️ Open the App →"}
               </button>
             </div>
           </div>
@@ -1232,7 +1296,7 @@ export default function App() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <div style={{ fontSize: 9, padding: "3px 8px", borderRadius: 10, fontWeight: 600, background: apiConnected ? lPal.pillBg : "#f1f5f9", color: apiConnected ? lPal.pillText : "#64748b", border: `1px solid ${apiConnected ? lPal.border : "#e2e8f0"}` }}>
-              {apiConnected ? "● Live" : "● Connecting…"}
+              {apiConnected ? "● Live" : usingDummy ? "● Demo" : "● Connecting…"}
             </div>
             {geoData?.detected_county && (
               <div style={{ fontSize: 9, padding: "3px 8px", borderRadius: 10, fontWeight: 600, background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0" }}>
@@ -1241,6 +1305,16 @@ export default function App() {
             )}
           </div>
         </header>
+
+        {/* Dummy data disclaimer banner */}
+        {usingDummy && (
+          <div className="demo-banner" style={{ background: "linear-gradient(90deg,#fef9ec,#fffbeb)", borderBottom: "1px solid #fde68a", padding: "7px 16px", display: "flex", alignItems: "center", gap: 8, flexShrink: 0, zIndex: 90 }}>
+            <span style={{ fontSize: 13 }}>🧪</span>
+            <span style={{ fontSize: 10, color: "#92400e", lineHeight: 1.4 }}>
+              <strong>Demo Mode — </strong>Live backend offline (Railway free plan). Showing estimated data. In production, an automated scraper would pull real-time NOAA, EPA &amp; CDPH data.
+            </span>
+          </div>
+        )}
 
         {/* Map section — fills all remaining viewport height */}
         <div style={{ display: "flex", flexDirection: isDesktop ? "row" : "column", flex: 1, minHeight: 0, overflow: "hidden" }}>
@@ -1273,12 +1347,12 @@ export default function App() {
 
       {/* Bottom sheet — outside overflow:hidden root */}
       {sel && sh > 0 && (
-        <div onClick={e => e.stopPropagation()} style={{
+        <div onClick={e => e.stopPropagation()} className="sheet-anim" style={{
           position: "fixed", bottom: isDesktop ? 0 : NAV_H, left: isDesktop ? "auto" : "50%", right: isDesktop ? 0 : "auto", transform: isDesktop ? "none" : "translateX(-50%)",
           width: isDesktop ? 420 : "100%", maxWidth: isDesktop ? 420 : 480,
           background: "#fff",
           borderRadius: "18px 18px 0 0",
-          boxShadow: "0 -2px 24px rgba(0,0,0,0.1)",
+          boxShadow: "0 -4px 32px rgba(0,0,0,0.13)",
           borderTop: `3px solid ${lPal.accent}`,
           zIndex: 5000,
           height: isDesktop ? "100vh" : (sh === 1 ? "46vh" : `calc(92vh - ${NAV_H}px)`),
@@ -1288,7 +1362,7 @@ export default function App() {
           {/* Handle */}
           <div style={{ padding: "10px 0 5px", display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", flexShrink: 0 }} onClick={() => sh === 1 ? setSh(2) : closeSheet()}>
             <div style={{ width: 36, height: 4, borderRadius: 2, background: "#e2e8f0" }} />
-            <span style={{ fontSize: 8, color: "#94a3b8", marginTop: 2 }}>{sh === 1 ? "↑ Full analysis" : "↓ Close"}</span>
+            <span style={{ fontSize: 8, color: "#94a3b8", marginTop: 2 }}>{isDesktop || sh === 2 ? "↓ Close" : "↑ Full analysis"}</span>
           </div>
 
           <div style={{ padding: "0 16px 20px", overflowY: "auto", flex: 1 }}>
@@ -1312,7 +1386,7 @@ export default function App() {
             </div>
 
             {/* Stat cards — shown first for immediate visibility */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 14 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 14, animation: "slideUp 0.4s cubic-bezier(0.32,0.72,0,1) 0.05s both" }}>
               <StatCard label="Wind" value={env?.wind_speed_kmh != null ? `${env.wind_speed_kmh.toFixed(0)} km/h` : null} warn={env?.wind_speed_kmh > 15} sub="dispersal: >15 km/h" />
               <StatCard label="PM10 Dust" value={env?.pm10_ugm3 != null ? `${env.pm10_ugm3.toFixed(0)} µg/m³` : null} warn={env?.pm10_ugm3 > 35} sub="high: >35 µg/m³" />
               <StatCard label="Temperature" value={env?.temperature_c != null ? `${env.temperature_c.toFixed(1)}°C` : null} warn={env?.temperature_c > 35} sub="spore-active: 20–40°C" />

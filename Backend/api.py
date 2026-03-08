@@ -292,7 +292,7 @@ def get_environmental_stats(county: str) -> dict:
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
 # ── Toggle this to False to disable all Gemini calls (e.g. when quota is exhausted) ──
-GEMINI_ENABLED = True
+GEMINI_ENABLED = False
 
 
 def get_gemini_client(with_search=False):
