@@ -192,9 +192,18 @@ def get_latest_risk(county: str) -> dict:
     # risk_score is now the continuous 0–100 Sporisk index (Gpot × Erisk × 100).
     # gpot and erisk are the two biological phase scores (each 0–1).
     # predicted_risk is the tier label derived from risk_score.
-    risk_score = float(latest["risk_score"]) if "risk_score" in latest else None
-    gpot       = float(latest["gpot"])       if "gpot"       in latest else None
-    erisk      = float(latest["erisk"])      if "erisk"      in latest else None
+    # Guard against old CSV that doesn't yet have sporisk columns
+    _has_sporisk = "gpot" in baseline_df.columns and "erisk" in baseline_df.columns
+
+    raw_score = latest.get("risk_score") if "risk_score" in latest.index else None
+    risk_score = float(raw_score) if raw_score is not None and not (isinstance(raw_score, float) and np.isnan(raw_score)) else None
+
+    gpot  = float(latest["gpot"])  if _has_sporisk and not np.isnan(float(latest["gpot"]))  else None
+    erisk = float(latest["erisk"]) if _has_sporisk and not np.isnan(float(latest["erisk"])) else None
+
+    # If old CSV, fall back to legacy integer-based risk_score so API still responds
+    if risk_score is None and "predicted_risk" in latest.index:
+        risk_score = {"Low": 1.0, "Moderate": 2.0, "High": 3.0, "Very High": 4.0}.get(str(latest["predicted_risk"]))
 
     return {
         "county": county,
@@ -799,7 +808,10 @@ def get_env_history(
     county_env = env_df[env_df["county"] == county_name].sort_values(["year", "month"]).tail(months)
 
     # Merge in risk_score from baseline predictions
-    baseline_county = baseline_df[baseline_df["county"] == county_name][["year", "month", "predicted_risk", "risk_score", "gpot", "erisk"]]
+    # Only select columns that exist — old CSVs lack gpot/erisk until model_baseline.py is re-run
+    _bl_want = ["year", "month", "predicted_risk", "risk_score", "gpot", "erisk"]
+    _bl_cols = [c for c in _bl_want if c in baseline_df.columns]
+    baseline_county = baseline_df[baseline_df["county"] == county_name][_bl_cols]
 
     records = []
     for _, row in county_env.iterrows():
