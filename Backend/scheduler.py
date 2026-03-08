@@ -39,7 +39,7 @@ import requests
 # ─────────────────────────────────────────────────────────────────────────────
 
 BASE_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
-DATA_DIR = BASE_DIR.parent / "data"
+DATA_DIR = BASE_DIR / "data"
 STATE_FILE = BASE_DIR / "scheduler_state.json"
 LOG_FILE = BASE_DIR / "scheduler.log"
 
