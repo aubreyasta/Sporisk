@@ -24,7 +24,7 @@ warnings.filterwarnings("ignore")
 # STEP 1: Load and aggregate to monthly
 # ============================================================
 
-_DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data")
+_DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 
 def load_and_aggregate(csv_path=os.path.join(_DATA, "sporerisk_master_corrected.csv")):
     """
