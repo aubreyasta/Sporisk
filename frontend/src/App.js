@@ -998,7 +998,7 @@ export default function App() {
               <StatCard label="Wind"        value={env?.wind_speed_kmh!=null?`${env.wind_speed_kmh.toFixed(0)} km/h`:null}  warn={env?.wind_speed_kmh>15}   sub="dispersal: >15 km/h"/>
               <StatCard label="PM10 Dust"   value={env?.pm10_ugm3!=null?`${env.pm10_ugm3.toFixed(0)} µg/m³`:null}           warn={env?.pm10_ugm3>35}         sub="high: >35 µg/m³"/>
               <StatCard label="Temperature" value={env?.temperature_c!=null?`${env.temperature_c.toFixed(1)}°C`:null}        warn={env?.temperature_c>35}     sub="spore-active: 20–40°C"/>
-              <StatCard label="Precip (today)" value={pr!=null?`${pr.toFixed(1)} mm`:null} warn={pr===0} sub="0 mm = dry soil risk"/>
+              <StatCard label="Precip (today)" value={(env?.precip_daily_mm??env?.precipitation_mm)!=null?`${(env?.precip_daily_mm??env?.precipitation_mm).toFixed(1)} mm`:null} warn={(env?.precip_daily_mm??env?.precipitation_mm)===0} sub="0 mm = dry soil risk"/>
             </div>
 
             {/* AI Risk Summary */}
