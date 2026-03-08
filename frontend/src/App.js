@@ -16,84 +16,84 @@ async function apiFetch(path) {
   } catch { return null; }
 }
 
-const TARGET_COUNTIES = ["Fresno","Kern","Kings","Madera","Merced","San Joaquin","Stanislaus","Tulare"];
-const RC       = { Low:"#22c55e", Moderate:"#d97706", High:"#dc2626", "Very High":"#b91c1c" };
+const TARGET_COUNTIES = ["Fresno", "Kern", "Kings", "Madera", "Merced", "San Joaquin", "Stanislaus", "Tulare"];
+const RC = { Low: "#22c55e", Moderate: "#d97706", High: "#dc2626", "Very High": "#b91c1c" };
 // eslint-disable-next-line no-unused-vars
-const RISK_LABEL = { 1:"Low", 2:"Moderate", 3:"High", 4:"Very High" };
+const RISK_LABEL = { 1: "Low", 2: "Moderate", 3: "High", 4: "Very High" };
 
 // Dark palette — landing screen only
 const DARK_PALETTE = {
-  Low:        { bg:"linear-gradient(160deg,#052e16 0%,#14532d 50%,#166534 100%)", accent:"#22c55e", glow:"rgba(34,197,94,0.45)", pulse:false },
-  Moderate:   { bg:"linear-gradient(160deg,#422006 0%,#713f12 50%,#854d0e 100%)", accent:"#eab308", glow:"rgba(234,179,8,0.45)",  pulse:false },
-  High:       { bg:"linear-gradient(160deg,#3b0006 0%,#7f1d1d 50%,#991b1b 100%)", accent:"#ef4444", glow:"rgba(239,68,68,0.55)",  pulse:false },
-  "Very High":{ bg:"linear-gradient(160deg,#0a0000 0%,#1c0101 50%,#3b0000 100%)", accent:"#dc2626", glow:"rgba(220,38,38,0.70)",  pulse:true  },
+  Low: { bg: "linear-gradient(160deg,#052e16 0%,#14532d 50%,#166534 100%)", accent: "#22c55e", glow: "rgba(34,197,94,0.45)", pulse: false },
+  Moderate: { bg: "linear-gradient(160deg,#422006 0%,#713f12 50%,#854d0e 100%)", accent: "#eab308", glow: "rgba(234,179,8,0.45)", pulse: false },
+  High: { bg: "linear-gradient(160deg,#3b0006 0%,#7f1d1d 50%,#991b1b 100%)", accent: "#ef4444", glow: "rgba(239,68,68,0.55)", pulse: false },
+  "Very High": { bg: "linear-gradient(160deg,#0a0000 0%,#1c0101 50%,#3b0000 100%)", accent: "#dc2626", glow: "rgba(220,38,38,0.70)", pulse: true },
 };
 
 // Light palette — map view
 const LIGHT_PALETTE = {
   Low: {
-    appBg:       "linear-gradient(150deg,#f0fdf4 0%,#ffffff 55%,#f7fff8 100%)",
-    accent:      "#16a34a",
-    accentMid:   "#86efac",
+    appBg: "linear-gradient(150deg,#f0fdf4 0%,#ffffff 55%,#f7fff8 100%)",
+    accent: "#16a34a",
+    accentMid: "#86efac",
     accentLight: "#f0fdf4",
-    border:      "#bbf7d0",
-    pillBg:      "#dcfce7",
-    pillText:    "#15803d",
-    headerBorder:"#bbf7d0",
-    summaryBg:   "#f0fdf4",
-    summaryBorder:"#bbf7d0",
+    border: "#bbf7d0",
+    pillBg: "#dcfce7",
+    pillText: "#15803d",
+    headerBorder: "#bbf7d0",
+    summaryBg: "#f0fdf4",
+    summaryBorder: "#bbf7d0",
     summaryText: "#166534",
-    navBorder:   "#e2e8f0",
-    chartBg:     "#fafffe",
-    intensity:   0,
+    navBorder: "#e2e8f0",
+    chartBg: "#fafffe",
+    intensity: 0,
   },
   Moderate: {
-    appBg:       "linear-gradient(150deg,#fefce8 0%,#ffffff 55%,#fffdf5 100%)",
-    accent:      "#ca8a04",
-    accentMid:   "#fcd34d",
+    appBg: "linear-gradient(150deg,#fefce8 0%,#ffffff 55%,#fffdf5 100%)",
+    accent: "#ca8a04",
+    accentMid: "#fcd34d",
     accentLight: "#fefce8",
-    border:      "#fde68a",
-    pillBg:      "#fef3c7",
-    pillText:    "#92400e",
-    headerBorder:"#fde68a",
-    summaryBg:   "#fefce8",
-    summaryBorder:"#fde68a",
+    border: "#fde68a",
+    pillBg: "#fef3c7",
+    pillText: "#92400e",
+    headerBorder: "#fde68a",
+    summaryBg: "#fefce8",
+    summaryBorder: "#fde68a",
     summaryText: "#92400e",
-    navBorder:   "#e2e8f0",
-    chartBg:     "#fffef9",
-    intensity:   1,
+    navBorder: "#e2e8f0",
+    chartBg: "#fffef9",
+    intensity: 1,
   },
   High: {
-    appBg:       "linear-gradient(150deg,#fff1f2 0%,#ffffff 55%,#fff5f5 100%)",
-    accent:      "#dc2626",
-    accentMid:   "#fca5a5",
+    appBg: "linear-gradient(150deg,#fff1f2 0%,#ffffff 55%,#fff5f5 100%)",
+    accent: "#dc2626",
+    accentMid: "#fca5a5",
     accentLight: "#fff1f2",
-    border:      "#fecaca",
-    pillBg:      "#fee2e2",
-    pillText:    "#991b1b",
-    headerBorder:"#fecaca",
-    summaryBg:   "#fff1f2",
-    summaryBorder:"#fecaca",
+    border: "#fecaca",
+    pillBg: "#fee2e2",
+    pillText: "#991b1b",
+    headerBorder: "#fecaca",
+    summaryBg: "#fff1f2",
+    summaryBorder: "#fecaca",
     summaryText: "#991b1b",
-    navBorder:   "#fecaca",
-    chartBg:     "#fffafa",
-    intensity:   2,
+    navBorder: "#fecaca",
+    chartBg: "#fffafa",
+    intensity: 2,
   },
   "Very High": {
-    appBg:       "linear-gradient(150deg,#fee2e2 0%,#fff1f2 45%,#ffffff 100%)",
-    accent:      "#b91c1c",
-    accentMid:   "#f87171",
+    appBg: "linear-gradient(150deg,#fee2e2 0%,#fff1f2 45%,#ffffff 100%)",
+    accent: "#b91c1c",
+    accentMid: "#f87171",
     accentLight: "#fee2e2",
-    border:      "#fca5a5",
-    pillBg:      "#fee2e2",
-    pillText:    "#7f1d1d",
-    headerBorder:"#f87171",
-    summaryBg:   "#fff1f2",
-    summaryBorder:"#fca5a5",
+    border: "#fca5a5",
+    pillBg: "#fee2e2",
+    pillText: "#7f1d1d",
+    headerBorder: "#f87171",
+    summaryBg: "#fff1f2",
+    summaryBorder: "#fca5a5",
     summaryText: "#7f1d1d",
-    navBorder:   "#fca5a5",
-    chartBg:     "#fff9f9",
-    intensity:   3,
+    navBorder: "#fca5a5",
+    chartBg: "#fff9f9",
+    intensity: 3,
   },
 };
 
@@ -101,8 +101,8 @@ function getDarkPal(risk) { return DARK_PALETTE[risk] || DARK_PALETTE["Low"]; }
 function getLightPal(risk) { return LIGHT_PALETTE[risk] || LIGHT_PALETTE["Low"]; }
 
 const CA_GEOJSON_URL = "https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/california-counties.geojson";
-const CA_CENTER   = [37.2, -119.5];
-const CA_BOUNDS   = [[32.4, -124.7], [42.1, -114.1]];
+const CA_CENTER = [37.2, -119.5];
+const CA_BOUNDS = [[32.4, -124.7], [42.1, -114.1]];
 
 function pointInPolygon(point, polygon) {
   const [px, py] = point;
@@ -127,34 +127,34 @@ function ensureLeafletCSS() {
   link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
   document.head.appendChild(link);
 }
-const ZONE_COLORS = { farm:"#f97316", school:"#3b82f6", worksite:"#a855f7" };
-const ZONE_ICONS  = { farm:"🌾", school:"🏫", worksite:"🏗️" };
-const CLINIC_COLORS = { hospital:"#ef4444", clinic:"#2563eb" };
+const ZONE_COLORS = { farm: "#f97316", school: "#3b82f6", worksite: "#a855f7" };
+const ZONE_ICONS = { farm: "🌾", school: "🏫", worksite: "🏗️" };
+const CLINIC_COLORS = { hospital: "#ef4444", clinic: "#2563eb" };
 
 // ── CircularRiskGauge (landing screen) ──────────────────────────────────────
-function CircularRiskGauge({ riskScore, riskLevel, county, size=220 }) {
-  const r=80, cx=100, cy=100, circ=2*Math.PI*r;
-  const pct = riskScore ? Math.min(1, riskScore/25) : 0;  // 0–100 score, cap arc at 25 for visual
-  const offset = circ*(1-pct);
+function CircularRiskGauge({ riskScore, riskLevel, county, size = 220 }) {
+  const r = 80, cx = 100, cy = 100, circ = 2 * Math.PI * r;
+  const pct = riskScore ? Math.min(1, riskScore / 25) : 0;  // 0–100 score, cap arc at 25 for visual
+  const offset = circ * (1 - pct);
   const pal = getDarkPal(riskLevel);
   const color = RC[riskLevel] || "#22c55e";
   return (
-    <svg viewBox="0 0 200 200" width={size} height={size} style={{overflow:"visible"}}>
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={13}/>
+    <svg viewBox="0 0 200 200" width={size} height={size} style={{ overflow: "visible" }}>
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={13} />
       <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth={13} strokeLinecap="round"
         strokeDasharray={circ} strokeDashoffset={offset} transform={`rotate(-90 ${cx} ${cy})`}
-        style={{transition:"stroke-dashoffset 1.4s cubic-bezier(0.4,0,0.2,1)",filter:`drop-shadow(0 0 10px ${pal.glow})`}}/>
+        style={{ transition: "stroke-dashoffset 1.4s cubic-bezier(0.4,0,0.2,1)", filter: `drop-shadow(0 0 10px ${pal.glow})` }} />
       {county ? (
         <>
-          <text x={cx} y={cy-20} textAnchor="middle" fontSize={8.5} fill="rgba(255,255,255,0.55)" fontFamily="system-ui" fontWeight={600}>{county.toUpperCase()} COUNTY</text>
-          <text x={cx} y={cy+6}  textAnchor="middle" fontSize={36}  fill="#fff"   fontFamily="system-ui" fontWeight={900}>{riskScore!=null ? (Number.isInteger(riskScore)?riskScore:riskScore.toFixed(1)) : "?"}</text>
-          <text x={cx} y={cy+22} textAnchor="middle" fontSize={8}   fill={color}  fontFamily="system-ui" fontWeight={700}>/100</text>
-          <text x={cx} y={cy+40} textAnchor="middle" fontSize={12}  fill={color}  fontFamily="system-ui" fontWeight={800}>{riskLevel || "…"}</text>
+          <text x={cx} y={cy - 20} textAnchor="middle" fontSize={8.5} fill="rgba(255,255,255,0.55)" fontFamily="system-ui" fontWeight={600}>{county.toUpperCase()} COUNTY</text>
+          <text x={cx} y={cy + 6} textAnchor="middle" fontSize={36} fill="#fff" fontFamily="system-ui" fontWeight={900}>{riskScore != null ? (Number.isInteger(riskScore) ? riskScore : riskScore.toFixed(1)) : "?"}</text>
+          <text x={cx} y={cy + 22} textAnchor="middle" fontSize={8} fill={color} fontFamily="system-ui" fontWeight={700}>/100</text>
+          <text x={cx} y={cy + 40} textAnchor="middle" fontSize={12} fill={color} fontFamily="system-ui" fontWeight={800}>{riskLevel || "…"}</text>
         </>
       ) : (
         <>
-          <text x={cx} y={cy-6}  textAnchor="middle" fontSize={11} fill="rgba(255,255,255,0.45)" fontFamily="system-ui">Detecting</text>
-          <text x={cx} y={cy+12} textAnchor="middle" fontSize={11} fill="rgba(255,255,255,0.45)" fontFamily="system-ui">location…</text>
+          <text x={cx} y={cy - 6} textAnchor="middle" fontSize={11} fill="rgba(255,255,255,0.45)" fontFamily="system-ui">Detecting</text>
+          <text x={cx} y={cy + 12} textAnchor="middle" fontSize={11} fill="rgba(255,255,255,0.45)" fontFamily="system-ui">location…</text>
         </>
       )}
     </svg>
@@ -162,34 +162,34 @@ function CircularRiskGauge({ riskScore, riskLevel, county, size=220 }) {
 }
 
 // ── MiniGauge (bottom sheet) — light-context version ────────────────────────
-function MiniGauge({ riskScore, riskLevel, size=72 }) {
-  const r=26, cx=34, cy=34, circ=2*Math.PI*r;
-  const offset = circ*(1-Math.min(1, riskScore?riskScore/25:0));
+function MiniGauge({ riskScore, riskLevel, size = 72 }) {
+  const r = 26, cx = 34, cy = 34, circ = 2 * Math.PI * r;
+  const offset = circ * (1 - Math.min(1, riskScore ? riskScore / 25 : 0));
   const color = RC[riskLevel] || "#22c55e";
   return (
-    <svg viewBox="0 0 68 68" width={size} height={size} style={{overflow:"visible",flexShrink:0}}>
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(0,0,0,0.07)" strokeWidth={6}/>
+    <svg viewBox="0 0 68 68" width={size} height={size} style={{ overflow: "visible", flexShrink: 0 }}>
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(0,0,0,0.07)" strokeWidth={6} />
       <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth={6} strokeLinecap="round"
         strokeDasharray={circ} strokeDashoffset={offset} transform={`rotate(-90 ${cx} ${cy})`}
-        style={{transition:"stroke-dashoffset 1s ease",filter:`drop-shadow(0 0 4px ${color}55)`}}/>
-      <text x={cx} y={cy+5}  textAnchor="middle" fontSize={16} fontWeight={900} fill="#1e293b" fontFamily="system-ui">{riskScore ?? "?"}</text>
-      <text x={cx} y={cy+16} textAnchor="middle" fontSize={7}  fill={color}     fontFamily="system-ui" fontWeight={700}>/100</text>
+        style={{ transition: "stroke-dashoffset 1s ease", filter: `drop-shadow(0 0 4px ${color}55)` }} />
+      <text x={cx} y={cy + 5} textAnchor="middle" fontSize={16} fontWeight={900} fill="#1e293b" fontFamily="system-ui">{riskScore ?? "?"}</text>
+      <text x={cx} y={cy + 16} textAnchor="middle" fontSize={7} fill={color} fontFamily="system-ui" fontWeight={700}>/100</text>
     </svg>
   );
 }
 
 // ── CaliforniaMap — OpenStreetMap via Leaflet ────────────────────────────────
 function CaliforniaMap({ selectedCounty, riskByCounty, onCountyClick, mapMode, vulnZones, clinics, onLocate }) {
-  const mapRef         = useRef(null);
-  const leafletRef     = useRef(null);
-  const layersRef      = useRef({});
-  const geoDataRef     = useRef(null);
+  const mapRef = useRef(null);
+  const leafletRef = useRef(null);
+  const layersRef = useRef({});
+  const geoDataRef = useRef(null);
   const clinicLayerRef = useRef(null);
-  const vulnLayerRef   = useRef(null);
+  const vulnLayerRef = useRef(null);
   const labelsLayerRef = useRef(null);
-  const centroidsRef   = useRef({});
-  const selectedRef    = useRef(selectedCounty);
-  const riskRef        = useRef(riskByCounty);
+  const centroidsRef = useRef({});
+  const selectedRef = useRef(selectedCounty);
+  const riskRef = useRef(riskByCounty);
 
   useEffect(() => { selectedRef.current = selectedCounty; }, [selectedCounty]);
   useEffect(() => { riskRef.current = riskByCounty; }, [riskByCounty]);
@@ -200,20 +200,20 @@ function CaliforniaMap({ selectedCounty, riskByCounty, onCountyClick, mapMode, v
     layer.clearLayers();
     Object.entries(centroidsRef.current).forEach(([name, pos]) => {
       const risk = riskRef.current[name];
-      const col  = RC[risk] || "#64748b";
+      const col = RC[risk] || "#64748b";
       const icon = L.divIcon({
         className: "",
-        html: `<div style="text-align:center;white-space:nowrap;pointer-events:none;transform:translate(-50%,-50%)"><div style="font-size:11px;font-weight:800;color:#1e293b;text-shadow:0 0 5px rgba(255,255,255,1),0 0 10px rgba(255,255,255,0.9)">${name}</div>${risk?`<div style="font-size:9px;font-weight:700;color:${col};text-shadow:0 0 4px rgba(255,255,255,1)">${risk}</div>`:""}</div>`,
+        html: `<div style="text-align:center;white-space:nowrap;pointer-events:none;transform:translate(-50%,-50%)"><div style="font-size:11px;font-weight:800;color:#1e293b;text-shadow:0 0 5px rgba(255,255,255,1),0 0 10px rgba(255,255,255,0.9)">${name}</div>${risk ? `<div style="font-size:9px;font-weight:700;color:${col};text-shadow:0 0 4px rgba(255,255,255,1)">${risk}</div>` : ""}</div>`,
         iconSize: [0, 0], iconAnchor: [0, 0],
       });
-      L.marker(pos, { icon, interactive:false }).addTo(layer);
+      L.marker(pos, { icon, interactive: false }).addTo(layer);
     });
   }
 
   useEffect(() => {
     if (!Object.keys(centroidsRef.current).length) return;
     updateLabels();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [riskByCounty]);
 
   useEffect(() => {
@@ -230,16 +230,16 @@ function CaliforniaMap({ selectedCounty, riskByCounty, onCountyClick, mapMode, v
     script.onload = initMap;
     document.head.appendChild(script);
     return () => { script.onload = null; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function getStyle(name, isSelected) {
     const risk = riskRef.current[name];
     if (!TARGET_COUNTIES.includes(name))
-      return { color:"#aaa", weight:0.4, fillColor:"#d1d5db", fillOpacity:0.22, opacity:0.6 };
+      return { color: "#aaa", weight: 0.4, fillColor: "#d1d5db", fillOpacity: 0.22, opacity: 0.6 };
     if (isSelected)
-      return { color:"#111", weight:2.5, fillColor:RC[risk]||"#6366f1", fillOpacity:0.65, opacity:1 };
-    return { color:"#555", weight:1.2, fillColor:RC[risk]||"#94a3b8", fillOpacity:risk?0.48:0.18, opacity:1 };
+      return { color: "#111", weight: 2.5, fillColor: RC[risk] || "#6366f1", fillOpacity: 0.65, opacity: 1 };
+    return { color: "#555", weight: 1.2, fillColor: RC[risk] || "#94a3b8", fillOpacity: risk ? 0.48 : 0.18, opacity: 1 };
   }
 
   function initMap() {
@@ -248,7 +248,7 @@ function CaliforniaMap({ selectedCounty, riskByCounty, onCountyClick, mapMode, v
     const map = L.map(mapRef.current, {
       center: CA_CENTER, zoom: 6,
       minZoom: 6, maxZoom: 12,
-      maxBounds: [[31.5,-125.5],[42.8,-113.0]],
+      maxBounds: [[31.5, -125.5], [42.8, -113.0]],
       maxBoundsViscosity: 1.0,
       zoomControl: false,
     });
@@ -256,28 +256,28 @@ function CaliforniaMap({ selectedCounty, riskByCounty, onCountyClick, mapMode, v
       attribution: "© <a href='https://openstreetmap.org'>OpenStreetMap</a>",
       className: "spore-tiles",
     }).addTo(map);
-    map.fitBounds(CA_BOUNDS, { padding:[8,8] });
-    L.control.zoom({ position:"topright" }).addTo(map);
+    map.fitBounds(CA_BOUNDS, { padding: [8, 8] });
+    L.control.zoom({ position: "topright" }).addTo(map);
 
     // Locate-me button
     const LocateCtrl = L.Control.extend({
-      options: { position:"topright" },
+      options: { position: "topright" },
       onAdd() {
-        const btn = L.DomUtil.create("button","leaflet-bar leaflet-control");
+        const btn = L.DomUtil.create("button", "leaflet-bar leaflet-control");
         btn.innerHTML = "⊕"; btn.title = "My location";
         btn.style.cssText = "width:30px;height:30px;font-size:16px;cursor:pointer;background:#fff;border:none;display:flex;align-items:center;justify-content:center;";
-        L.DomEvent.on(btn,"click",L.DomEvent.stopPropagation);
-        L.DomEvent.on(btn,"click",() => {
+        L.DomEvent.on(btn, "click", L.DomEvent.stopPropagation);
+        L.DomEvent.on(btn, "click", () => {
           navigator.geolocation?.getCurrentPosition(pos => {
-            const { latitude:lat, longitude:lon } = pos.coords;
-            map.flyTo([lat,lon], 10, { duration:1.2 });
+            const { latitude: lat, longitude: lon } = pos.coords;
+            map.flyTo([lat, lon], 10, { duration: 1.2 });
             const geo = geoDataRef.current;
             if (!geo || !onLocate) return;
             const match = geo.features.find(f => pointInFeature(lon, lat, f));
             const name = match?.properties?.name ?? null;
             const isTarget = name && TARGET_COUNTIES.includes(name);
             onLocate({ county: isTarget ? name : null, status: isTarget ? "in-range" : "out-of-range" });
-          }, ()=>{});
+          }, () => { });
         });
         return btn;
       },
@@ -286,21 +286,21 @@ function CaliforniaMap({ selectedCounty, riskByCounty, onCountyClick, mapMode, v
 
     leafletRef.current = map;
     clinicLayerRef.current = L.layerGroup().addTo(map);
-    vulnLayerRef.current   = L.layerGroup().addTo(map);
+    vulnLayerRef.current = L.layerGroup().addTo(map);
     labelsLayerRef.current = L.layerGroup().addTo(map);
 
-    fetch(CA_GEOJSON_URL).then(r=>r.json()).then(geo => {
+    fetch(CA_GEOJSON_URL).then(r => r.json()).then(geo => {
       geoDataRef.current = geo;
       geo.features.forEach(feature => {
         const name = feature.properties.name;
         const isTarget = TARGET_COUNTIES.includes(name);
         const layer = L.geoJSON(feature, {
           style: () => getStyle(name, name === selectedRef.current),
-          onEachFeature: (_,lyr) => {
+          onEachFeature: (_, lyr) => {
             if (!isTarget) return;
             lyr.on("click", () => onCountyClick(name));
             lyr.on("mouseover", () => {
-              if (name !== selectedRef.current) lyr.setStyle({ fillOpacity:0.72, weight:2 });
+              if (name !== selectedRef.current) lyr.setStyle({ fillOpacity: 0.72, weight: 2 });
             });
             lyr.on("mouseout", () => {
               if (name !== selectedRef.current) lyr.setStyle(getStyle(name, false));
@@ -314,35 +314,35 @@ function CaliforniaMap({ selectedCounty, riskByCounty, onCountyClick, mapMode, v
             ? feature.geometry.coordinates[0]
             : feature.geometry.coordinates[0][0];
           if (coords?.length) {
-            const [sl, sa] = coords.reduce(([sl,sa],[lo,la]) => [sl+lo, sa+la], [0,0]);
-            centroidsRef.current[name] = [sa/coords.length, sl/coords.length];
+            const [sl, sa] = coords.reduce(([sl, sa], [lo, la]) => [sl + lo, sa + la], [0, 0]);
+            centroidsRef.current[name] = [sa / coords.length, sl / coords.length];
           }
         }
       });
       updateLabels();
-    }).catch(()=>{});
+    }).catch(() => { });
   }
 
   // Re-style + flyTo when selection changes
   useEffect(() => {
     const L = window.L; const map = leafletRef.current;
     if (!L || !map || !geoDataRef.current) return;
-    Object.entries(layersRef.current).forEach(([name,layer]) =>
+    Object.entries(layersRef.current).forEach(([name, layer]) =>
       layer.setStyle(getStyle(name, name === selectedCounty))
     );
-    if (!selectedCounty) { map.flyTo(CA_CENTER, 6, { duration:0.8 }); return; }
+    if (!selectedCounty) { map.flyTo(CA_CENTER, 6, { duration: 0.8 }); return; }
     const feat = geoDataRef.current.features.find(f => f.properties.name === selectedCounty);
     if (feat) {
       // paddingTopLeft/BottomRight accounts for bottom sheet covering lower half of map
       // This pushes the county centroid into the visible upper portion of the screen
       map.flyToBounds(L.geoJSON(feat).getBounds(), {
-        paddingTopLeft:    [28, 28],
-        paddingBottomRight:[28, Math.floor(window.innerHeight * 0.45)],
+        paddingTopLeft: [28, 28],
+        paddingBottomRight: [28, Math.floor(window.innerHeight * 0.45)],
         maxZoom: 9,
         duration: 0.9,
       });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCounty, riskByCounty]);
 
   // Clinic markers
@@ -354,8 +354,8 @@ function CaliforniaMap({ selectedCounty, riskByCounty, onCountyClick, mapMode, v
     clinics.forEach(c => {
       if (!c.lat || !c.lon) return;
       const col = CLINIC_COLORS[c.type] || "#2563eb";
-      const m = L.circleMarker([c.lat, c.lon], { radius:9, color:"#fff", weight:2, fillColor:col, fillOpacity:0.92 });
-      m.bindTooltip(`<b>${c.name}</b><br/><span style="color:#94a3b8">${c.type}</span>${c.note?`<br/>${c.note}`:""}`, { className:"spore-tip", direction:"top", offset:[0,-9] });
+      const m = L.circleMarker([c.lat, c.lon], { radius: 9, color: "#fff", weight: 2, fillColor: col, fillOpacity: 0.92 });
+      m.bindTooltip(`<b>${c.name}</b><br/><span style="color:#94a3b8">${c.type}</span>${c.note ? `<br/>${c.note}` : ""}`, { className: "spore-tip", direction: "top", offset: [0, -9] });
       layer.addLayer(m);
     });
   }, [clinics, mapMode]);
@@ -369,42 +369,42 @@ function CaliforniaMap({ selectedCounty, riskByCounty, onCountyClick, mapMode, v
     vulnZones.forEach(z => {
       if (!z.lat || !z.lon) return;
       const col = ZONE_COLORS[z.type] || "#94a3b8";
-      const r = Math.max(5, Math.min(11, 4 + (z.population_estimate||1000)/2000));
-      const m = L.circleMarker([z.lat, z.lon], { radius:r, color:"#fff", weight:1.5, fillColor:col, fillOpacity:0.85 });
-      m.bindTooltip(`<b>${ZONE_ICONS[z.type]||""} ${z.name}</b><br/>${z.type} · ${(z.population_estimate||0).toLocaleString()} people`, { className:"spore-tip", direction:"top", offset:[0,-r] });
+      const r = Math.max(5, Math.min(11, 4 + (z.population_estimate || 1000) / 2000));
+      const m = L.circleMarker([z.lat, z.lon], { radius: r, color: "#fff", weight: 1.5, fillColor: col, fillOpacity: 0.85 });
+      m.bindTooltip(`<b>${ZONE_ICONS[z.type] || ""} ${z.name}</b><br/>${z.type} · ${(z.population_estimate || 0).toLocaleString()} people`, { className: "spore-tip", direction: "top", offset: [0, -r] });
       layer.addLayer(m);
     });
   }, [vulnZones, mapMode]);
 
   return (
-    <div style={{ position:"relative", width:"100%", height:"100%" }}>
-      <div ref={mapRef} style={{ width:"100%", height:"100%", borderRadius:8 }} />
+    <div style={{ position: "relative", width: "100%", height: "100%" }}>
+      <div ref={mapRef} style={{ width: "100%", height: "100%", borderRadius: 8 }} />
       {/* Risk legend */}
-      <div style={{ position:"absolute", bottom:96, left:8, zIndex:1000, background:"rgba(255,255,255,0.93)", borderRadius:7, padding:"6px 9px", boxShadow:"0 1px 6px rgba(0,0,0,0.14)", display:"flex", flexDirection:"column", gap:4 }}>
-        {Object.entries(RC).map(([level,color]) => (
-          <div key={level} style={{ display:"flex", alignItems:"center", gap:6 }}>
-            <div style={{ width:10, height:10, borderRadius:2, background:color, flexShrink:0 }}/>
-            <span style={{ fontSize:10, color:"#374151", fontWeight:600, fontFamily:"system-ui" }}>{level}</span>
+      <div style={{ position: "absolute", bottom: 96, left: 8, zIndex: 1000, background: "rgba(255,255,255,0.93)", borderRadius: 7, padding: "6px 9px", boxShadow: "0 1px 6px rgba(0,0,0,0.14)", display: "flex", flexDirection: "column", gap: 4 }}>
+        {Object.entries(RC).map(([level, color]) => (
+          <div key={level} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ width: 10, height: 10, borderRadius: 2, background: color, flexShrink: 0 }} />
+            <span style={{ fontSize: 10, color: "#374151", fontWeight: 600, fontFamily: "system-ui" }}>{level}</span>
           </div>
         ))}
       </div>
       {/* Mode overlay legend */}
-      {mapMode==="clinics" && (
-        <div style={{ position:"absolute", bottom:96, right:8, zIndex:1000, background:"rgba(255,255,255,0.93)", borderRadius:7, padding:"6px 9px", boxShadow:"0 1px 6px rgba(0,0,0,0.14)", display:"flex", flexDirection:"column", gap:4 }}>
-          {[["hospital","#ef4444"],["clinic","#2563eb"]].map(([t,c])=>(
-            <div key={t} style={{ display:"flex", alignItems:"center", gap:6 }}>
-              <div style={{ width:10, height:10, borderRadius:"50%", background:c, flexShrink:0 }}/>
-              <span style={{ fontSize:10, color:"#374151", fontWeight:600, fontFamily:"system-ui" }}>🏥 {t}</span>
+      {mapMode === "clinics" && (
+        <div style={{ position: "absolute", bottom: 96, right: 8, zIndex: 1000, background: "rgba(255,255,255,0.93)", borderRadius: 7, padding: "6px 9px", boxShadow: "0 1px 6px rgba(0,0,0,0.14)", display: "flex", flexDirection: "column", gap: 4 }}>
+          {[["hospital", "#ef4444"], ["clinic", "#2563eb"]].map(([t, c]) => (
+            <div key={t} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ width: 10, height: 10, borderRadius: "50%", background: c, flexShrink: 0 }} />
+              <span style={{ fontSize: 10, color: "#374151", fontWeight: 600, fontFamily: "system-ui" }}>🏥 {t}</span>
             </div>
           ))}
         </div>
       )}
-      {mapMode==="vulnerable" && (
-        <div style={{ position:"absolute", bottom:96, right:8, zIndex:1000, background:"rgba(255,255,255,0.93)", borderRadius:7, padding:"6px 9px", boxShadow:"0 1px 6px rgba(0,0,0,0.14)", display:"flex", flexDirection:"column", gap:4 }}>
-          {Object.entries(ZONE_COLORS).map(([type,color])=>(
-            <div key={type} style={{ display:"flex", alignItems:"center", gap:6 }}>
-              <div style={{ width:10, height:10, borderRadius:"50%", background:color, flexShrink:0 }}/>
-              <span style={{ fontSize:10, color:"#374151", fontWeight:600, fontFamily:"system-ui" }}>{ZONE_ICONS[type]} {type}</span>
+      {mapMode === "vulnerable" && (
+        <div style={{ position: "absolute", bottom: 96, right: 8, zIndex: 1000, background: "rgba(255,255,255,0.93)", borderRadius: 7, padding: "6px 9px", boxShadow: "0 1px 6px rgba(0,0,0,0.14)", display: "flex", flexDirection: "column", gap: 4 }}>
+          {Object.entries(ZONE_COLORS).map(([type, color]) => (
+            <div key={type} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ width: 10, height: 10, borderRadius: "50%", background: color, flexShrink: 0 }} />
+              <span style={{ fontSize: 10, color: "#374151", fontWeight: 600, fontFamily: "system-ui" }}>{ZONE_ICONS[type]} {type}</span>
             </div>
           ))}
         </div>
@@ -422,82 +422,82 @@ function RiskIndexPanel({ detail, env, riskLevel }) {
   // env API call cannot provide. The backend has access to the full historical
   // dataset and computes these correctly using MinMax-normalized lag features.
   // Do NOT recompute from today's live weather — that would use wrong variables.
-  const gPot     = detail?.gpot  ?? null;   // Growth Potential (0–0.85)
-  const eRisk    = detail?.erisk ?? null;   // Exposure Risk (0–0.65)
+  const gPot = detail?.gpot ?? null;   // Growth Potential (0–0.85)
+  const eRisk = detail?.erisk ?? null;   // Exposure Risk (0–0.65)
   const rawScore = detail?.risk_score != null
     ? detail.risk_score.toFixed(1)
     : (gPot != null && eRisk != null ? (gPot * eRisk * 100).toFixed(1) : "—");
 
   // Current live env values — shown in the table for context only,
   // NOT used in the Gpot/Erisk calculation (those use lagged values)
-  const sm   = env?.soil_moisture;
+  const sm = env?.soil_moisture;
   const temp = env?.temperature_c;
-  const pr   = env?.precip_daily_mm ?? env?.precipitation_mm;  // daily total, not current-hour
+  const pr = env?.precip_daily_mm ?? env?.precipitation_mm;  // daily total, not current-hour
   const pm10 = env?.pm10_ugm3;
   const wind = env?.wind_speed_kmh;
   const vars = [
-    { name:"Soil Moisture (now)",  val: sm!=null   ? `${(sm*100).toFixed(1)}%`   : "—", note:"Erisk: aridity proxy" },
-    { name:"Temperature (now)",    val: temp!=null  ? `${temp.toFixed(1)}°C`      : "—", note:"context only"        },
-    { name:"Precipitation (now)",  val: pr!=null    ? `${pr.toFixed(0)} mm`       : "—", note:"context only"        },
-    { name:"PM10 Dust (now)",      val: pm10!=null  ? `${pm10.toFixed(1)} µg/m³` : "—", note:"Erisk: spore proxy"  },
-    { name:"Wind Speed (now)",     val: wind!=null  ? `${wind.toFixed(1)} km/h`  : "—", note:"Erisk: transport"    },
-    { name:"SM lag 6mo ✦",        val: "—",                                              note:"Gpot: #1 predictor"  },
-    { name:"Precip lag 1.5yr ✦",  val: "—",                                              note:"Gpot: drought signal" },
+    { name: "Soil Moisture (now)", val: sm != null ? `${(sm * 100).toFixed(1)}%` : "—", note: "Erisk: aridity proxy" },
+    { name: "Temperature (now)", val: temp != null ? `${temp.toFixed(1)}°C` : "—", note: "context only" },
+    { name: "Precipitation (now)", val: pr != null ? `${pr.toFixed(0)} mm` : "—", note: "context only" },
+    { name: "PM10 Dust (now)", val: pm10 != null ? `${pm10.toFixed(1)} µg/m³` : "—", note: "Erisk: spore proxy" },
+    { name: "Wind Speed (now)", val: wind != null ? `${wind.toFixed(1)} km/h` : "—", note: "Erisk: transport" },
+    { name: "SM lag 6mo ✦", val: "—", note: "Gpot: #1 predictor" },
+    { name: "Precip lag 1.5yr ✦", val: "—", note: "Gpot: drought signal" },
   ];
 
   return (
-    <div style={{ marginBottom:16 }}>
-      <div style={{ fontSize:9, color:"#94a3b8", fontWeight:700, letterSpacing:1, marginBottom:4 }}>ALGORITHM</div>
-      <div style={{ fontSize:16, fontWeight:900, color:"#1e293b", marginBottom:4 }}>Two-Phase Risk Index</div>
-      <div style={{ fontSize:10, color:"#64748b", lineHeight:1.5, marginBottom:12 }}>
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ fontSize: 9, color: "#94a3b8", fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>ALGORITHM</div>
+      <div style={{ fontSize: 16, fontWeight: 900, color: "#1e293b", marginBottom: 4 }}>Two-Phase Risk Index</div>
+      <div style={{ fontSize: 10, color: "#64748b", lineHeight: 1.5, marginBottom: 12 }}>
         Risk = G<sub>pot</sub> × E<sub>risk</sub>. Growth without dispersal = zero cases. Dispersal without growth = nothing to disperse. Both must align.
       </div>
 
       {/* Score equation */}
-      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14, background:pal.accentLight, borderRadius:10, padding:"12px 14px", border:`1px solid ${pal.border}` }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, background: pal.accentLight, borderRadius: 10, padding: "12px 14px", border: `1px solid ${pal.border}` }}>
         {[
-          { label:"G_POT", val:gPot?.toFixed(2)||"—", sub:"Growth",   bg:"#f8fafc", fg:"#1e293b" },
-          { label:"×",     val:null, sub:null, op:true },
-          { label:"E_RISK",val:eRisk?.toFixed(2)||"—",sub:"Exposure", bg:"#f8fafc", fg:"#1e293b" },
-          { label:"=",     val:null, sub:null, op:true },
-          { label:"RISK",  val:rawScore||"—",          sub:"Score",   bg:"#1e293b", fg:"#fff"   },
-        ].map((item,i)=>(
+          { label: "G_POT", val: gPot?.toFixed(2) || "—", sub: "Growth", bg: "#f8fafc", fg: "#1e293b" },
+          { label: "×", val: null, sub: null, op: true },
+          { label: "E_RISK", val: eRisk?.toFixed(2) || "—", sub: "Exposure", bg: "#f8fafc", fg: "#1e293b" },
+          { label: "=", val: null, sub: null, op: true },
+          { label: "RISK", val: rawScore || "—", sub: "Gpot×Erisk×100", bg: "#1e293b", fg: "#fff" },
+        ].map((item, i) => (
           item.op ? (
-            <span key={i} style={{ fontSize:18, color:"#94a3b8", fontWeight:300, flexShrink:0 }}>{item.label}</span>
+            <span key={i} style={{ fontSize: 18, color: "#94a3b8", fontWeight: 300, flexShrink: 0 }}>{item.label}</span>
           ) : (
-            <div key={i} style={{ flex:1, background:item.bg, borderRadius:8, padding:"10px 8px", textAlign:"center", border:`1px solid ${item.bg==="#1e293b"?"transparent":"#e2e8f0"}` }}>
-              <div style={{ fontSize:8, color:item.fg==="#fff"?"rgba(255,255,255,0.5)":"#94a3b8", fontWeight:700, letterSpacing:0.5 }}>{item.label}</div>
-              <div style={{ fontSize:24, fontWeight:900, color:item.fg, lineHeight:1.1, margin:"2px 0" }}>{item.val}</div>
-              <div style={{ fontSize:8, color:item.fg==="#fff"?"rgba(255,255,255,0.45)":"#94a3b8" }}>{item.sub}</div>
+            <div key={i} style={{ flex: 1, background: item.bg, borderRadius: 8, padding: "10px 8px", textAlign: "center", border: `1px solid ${item.bg === "#1e293b" ? "transparent" : "#e2e8f0"}` }}>
+              <div style={{ fontSize: 8, color: item.fg === "#fff" ? "rgba(255,255,255,0.5)" : "#94a3b8", fontWeight: 700, letterSpacing: 0.5 }}>{item.label}</div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: item.fg, lineHeight: 1.1, margin: "2px 0" }}>{item.val}</div>
+              <div style={{ fontSize: 8, color: item.fg === "#fff" ? "rgba(255,255,255,0.45)" : "#94a3b8" }}>{item.sub}</div>
             </div>
           )
         ))}
       </div>
 
       {/* Variable table — live env values shown for context; Gpot/Erisk computed by backend from lagged data */}
-      <div style={{ fontSize:8, color:"#94a3b8", marginBottom:6, lineHeight:1.5 }}>
-        ✦ Lag variables (6mo / 18mo) are computed by the backend from historical data.<br/>
+      <div style={{ fontSize: 8, color: "#94a3b8", marginBottom: 6, lineHeight: 1.5 }}>
+        ✦ Lag variables (6mo / 18mo) are computed by the backend from historical data.<br />
         Current env values shown below are context only — not used in Gpot/Erisk.
       </div>
-      <table style={{ width:"100%", borderCollapse:"collapse" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
-          <tr style={{ borderBottom:"1px solid #e2e8f0" }}>
-            <th style={{ textAlign:"left",  fontSize:8.5, fontWeight:700, color:"#94a3b8", padding:"4px 0", letterSpacing:0.8 }}>VARIABLE</th>
-            <th style={{ textAlign:"right", fontSize:8.5, fontWeight:700, color:"#94a3b8", padding:"4px 4px" }}>CURRENT</th>
-            <th style={{ textAlign:"right", fontSize:8.5, fontWeight:700, color:"#64748b", padding:"4px 0" }}>PHASE</th>
+          <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+            <th style={{ textAlign: "left", fontSize: 8.5, fontWeight: 700, color: "#94a3b8", padding: "4px 0", letterSpacing: 0.8 }}>VARIABLE</th>
+            <th style={{ textAlign: "right", fontSize: 8.5, fontWeight: 700, color: "#94a3b8", padding: "4px 4px" }}>CURRENT</th>
+            <th style={{ textAlign: "right", fontSize: 8.5, fontWeight: 700, color: "#64748b", padding: "4px 0" }}>PHASE</th>
           </tr>
         </thead>
         <tbody>
-          {vars.filter(v=>v.val!=="—" || v.note).map((v,i)=>(
-            <tr key={i} style={{ borderBottom:"1px solid #f1f5f9" }}>
-              <td style={{ fontSize:11, fontWeight:600, color:"#1e293b", padding:"6px 0" }}>{v.name}</td>
-              <td style={{ fontSize:11, color:"#64748b", padding:"6px 4px", textAlign:"right" }}>{v.val!=="—"?v.val:"—"}</td>
-              <td style={{ fontSize:9,  color:"#94a3b8", padding:"6px 0",  textAlign:"right" }}>{v.note}</td>
+          {vars.filter(v => v.val !== "—" || v.note).map((v, i) => (
+            <tr key={i} style={{ borderBottom: "1px solid #f1f5f9" }}>
+              <td style={{ fontSize: 11, fontWeight: 600, color: "#1e293b", padding: "6px 0" }}>{v.name}</td>
+              <td style={{ fontSize: 11, color: "#64748b", padding: "6px 4px", textAlign: "right" }}>{v.val !== "—" ? v.val : "—"}</td>
+              <td style={{ fontSize: 9, color: "#94a3b8", padding: "6px 0", textAlign: "right" }}>{v.note}</td>
             </tr>
           ))}
         </tbody>
       </table>
-      <div style={{ fontSize:8.5, color:"#94a3b8", marginTop:8, lineHeight:1.5 }}>
+      <div style={{ fontSize: 8.5, color: "#94a3b8", marginTop: 8, lineHeight: 1.5 }}>
         Gpot/Erisk weights from MNBR aIRRs, validated by Random Forest (sm_lag6 = 22.3% importance, #1 feature).
       </div>
     </div>
@@ -508,10 +508,10 @@ function RiskIndexPanel({ detail, env, riskLevel }) {
 function LightChart({ title, sub, children, riskLevel }) {
   const pal = getLightPal(riskLevel);
   return (
-    <div style={{ background:pal.chartBg, borderRadius:10, padding:"12px 6px 8px", border:"1px solid #e2e8f0", marginBottom:12 }}>
-      <div style={{ paddingLeft:10, marginBottom:6 }}>
-        <div style={{ fontSize:11, fontWeight:700, color:"#1e293b" }}>{title}</div>
-        {sub && <div style={{ fontSize:8.5, color:"#94a3b8" }}>{sub}</div>}
+    <div style={{ background: pal.chartBg, borderRadius: 10, padding: "12px 6px 8px", border: "1px solid #e2e8f0", marginBottom: 12 }}>
+      <div style={{ paddingLeft: 10, marginBottom: 6 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#1e293b" }}>{title}</div>
+        {sub && <div style={{ fontSize: 8.5, color: "#94a3b8" }}>{sub}</div>}
       </div>
       <ResponsiveContainer width="100%" height={170}>{children}</ResponsiveContainer>
     </div>
@@ -519,14 +519,14 @@ function LightChart({ title, sub, children, riskLevel }) {
 }
 
 // ── Tooltip components ───────────────────────────────────────────────────────
-function LightTooltip({ active, payload, label, unit="" }) {
+function LightTooltip({ active, payload, label, unit = "" }) {
   if (!active || !payload?.length) return null;
   return (
-    <div style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:7, padding:"7px 10px", fontSize:11, boxShadow:"0 2px 8px rgba(0,0,0,0.08)" }}>
-      <div style={{ fontWeight:700, marginBottom:3, color:"#374151" }}>{label}</div>
-      {payload.map((p,i)=>(
-        <div key={i} style={{ color:p.color, marginBottom:1 }}>
-          {p.name}: {typeof p.value==="number"?p.value.toFixed(1):p.value}{unit}
+    <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 7, padding: "7px 10px", fontSize: 11, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+      <div style={{ fontWeight: 700, marginBottom: 3, color: "#374151" }}>{label}</div>
+      {payload.map((p, i) => (
+        <div key={i} style={{ color: p.color, marginBottom: 1 }}>
+          {p.name}: {typeof p.value === "number" ? p.value.toFixed(1) : p.value}{unit}
         </div>
       ))}
     </div>
@@ -536,11 +536,11 @@ function LightTooltip({ active, payload, label, unit="" }) {
 function RiskTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
-    <div style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:7, padding:"7px 10px", fontSize:11, boxShadow:"0 2px 8px rgba(0,0,0,0.08)" }}>
-      <div style={{ fontWeight:700, marginBottom:3, color:"#374151" }}>{label}</div>
-      {payload.map((p,i)=>(
-        <div key={i} style={{ color:p.color, marginBottom:1 }}>
-          {p.name}: {p.name==="Risk Score" ? `${p.value?.toFixed?p.value.toFixed(1):p.value}/100` : p.value}
+    <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 7, padding: "7px 10px", fontSize: 11, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+      <div style={{ fontWeight: 700, marginBottom: 3, color: "#374151" }}>{label}</div>
+      {payload.map((p, i) => (
+        <div key={i} style={{ color: p.color, marginBottom: 1 }}>
+          {p.name}: {p.name === "Risk Score" ? `${p.value?.toFixed ? p.value.toFixed(1) : p.value}/100` : p.value}
         </div>
       ))}
     </div>
@@ -555,9 +555,9 @@ function StatCard({ label, value, sub, warn, accent }) {
       border: `1px solid ${warn ? "#fecaca" : "#e2e8f0"}`,
       borderRadius: 9, padding: "9px 11px",
     }}>
-      <div style={{ fontSize:8, color:warn?"#dc2626":"#94a3b8", fontWeight:700, letterSpacing:0.6 }}>{label}</div>
-      <div style={{ fontSize:17, fontWeight:800, color:warn?"#dc2626":"#1e293b", marginTop:2 }}>{value ?? "—"}</div>
-      {sub && <div style={{ fontSize:8, color:"#94a3b8", marginTop:1 }}>{sub}</div>}
+      <div style={{ fontSize: 8, color: warn ? "#dc2626" : "#94a3b8", fontWeight: 700, letterSpacing: 0.6 }}>{label}</div>
+      <div style={{ fontSize: 17, fontWeight: 800, color: warn ? "#dc2626" : "#1e293b", marginTop: 2 }}>{value ?? "—"}</div>
+      {sub && <div style={{ fontSize: 8, color: "#94a3b8", marginTop: 1 }}>{sub}</div>}
     </div>
   );
 }
@@ -568,53 +568,53 @@ function ReportModal({ county, onClose }) {
   const [desc, setDesc] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(null);
-  const rid = (() => { try { let id=localStorage.getItem("sr_rid"); if(!id){id=Math.random().toString(36).slice(2);localStorage.setItem("sr_rid",id);} return id; } catch { return "anon"; } })();
+  const rid = (() => { try { let id = localStorage.getItem("sr_rid"); if (!id) { id = Math.random().toString(36).slice(2); localStorage.setItem("sr_rid", id); } return id; } catch { return "anon"; } })();
 
   const submit = async () => {
     setSubmitting(true);
     try {
-      const res = await fetch(`${API}/report/dust`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({county,severity,description:desc,reporter_id:rid}), signal:AbortSignal.timeout(8000) });
+      const res = await fetch(`${API}/report/dust`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ county, severity, description: desc, reporter_id: rid }), signal: AbortSignal.timeout(8000) });
       setDone(await res.json());
-    } catch { setDone({success:true,message:"Report submitted!",badge_earned:false}); }
+    } catch { setDone({ success: true, message: "Report submitted!", badge_earned: false }); }
     setSubmitting(false);
   };
 
   return (
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.35)", zIndex:10000, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
-      <div style={{ background:"#fff", borderRadius:"20px 20px 0 0", width:"100%", maxWidth:480, padding:"24px 20px 40px", boxShadow:"0 -4px 32px rgba(0,0,0,0.1)" }}>
-        <div style={{ display:"flex", justifyContent:"space-between", marginBottom:16 }}>
-          <div style={{ fontWeight:900, fontSize:16, color:"#1e293b" }}>🌪️ Report Dust Storm</div>
-          <button onClick={onClose} style={{ background:"none", border:"none", color:"#94a3b8", fontSize:20, cursor:"pointer" }}>✕</button>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", zIndex: 10000, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+      <div style={{ background: "#fff", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, padding: "24px 20px 40px", boxShadow: "0 -4px 32px rgba(0,0,0,0.1)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+          <div style={{ fontWeight: 900, fontSize: 16, color: "#1e293b" }}>🌪️ Report Dust Storm</div>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 20, cursor: "pointer" }}>✕</button>
         </div>
         {done ? (
-          <div style={{ textAlign:"center", padding:"20px 0" }}>
-            <div style={{ fontSize:40, marginBottom:8 }}>{done.badge_earned?"🏅":"✅"}</div>
-            <div style={{ color:"#1e293b", fontWeight:700, fontSize:15, marginBottom:6 }}>{done.badge_earned?"Badge Earned: Community Shield 🛡️":"Report Received!"}</div>
-            <div style={{ color:"#64748b", fontSize:12, lineHeight:1.6 }}>{done.message}</div>
-            <button onClick={onClose} style={{ marginTop:16, background:"#dc2626", border:"none", borderRadius:12, padding:"10px 24px", color:"#fff", fontWeight:700, cursor:"pointer" }}>Done</button>
+          <div style={{ textAlign: "center", padding: "20px 0" }}>
+            <div style={{ fontSize: 40, marginBottom: 8 }}>{done.badge_earned ? "🏅" : "✅"}</div>
+            <div style={{ color: "#1e293b", fontWeight: 700, fontSize: 15, marginBottom: 6 }}>{done.badge_earned ? "Badge Earned: Community Shield 🛡️" : "Report Received!"}</div>
+            <div style={{ color: "#64748b", fontSize: 12, lineHeight: 1.6 }}>{done.message}</div>
+            <button onClick={onClose} style={{ marginTop: 16, background: "#dc2626", border: "none", borderRadius: 12, padding: "10px 24px", color: "#fff", fontWeight: 700, cursor: "pointer" }}>Done</button>
           </div>
         ) : (
           <>
-            <div style={{ marginBottom:12 }}>
-              <div style={{ fontSize:9, color:"#94a3b8", fontWeight:700, letterSpacing:0.5, marginBottom:5 }}>COUNTY</div>
-              <div style={{ background:"#f8fafc", borderRadius:8, padding:"8px 12px", color:"#374151", fontSize:13 }}>{county}</div>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 9, color: "#94a3b8", fontWeight: 700, letterSpacing: 0.5, marginBottom: 5 }}>COUNTY</div>
+              <div style={{ background: "#f8fafc", borderRadius: 8, padding: "8px 12px", color: "#374151", fontSize: 13 }}>{county}</div>
             </div>
-            <div style={{ marginBottom:12 }}>
-              <div style={{ fontSize:9, color:"#94a3b8", fontWeight:700, letterSpacing:0.5, marginBottom:5 }}>SEVERITY</div>
-              <div style={{ display:"flex", gap:6 }}>
-                {[1,2,3].map(s=>(
-                  <button key={s} onClick={()=>setSeverity(s)} style={{ flex:1, padding:"8px 4px", borderRadius:8, border:`2px solid ${severity===s?"#dc2626":"#e2e8f0"}`, background:severity===s?"#fee2e2":"#f8fafc", color:severity===s?"#991b1b":"#64748b", cursor:"pointer", fontSize:10, fontWeight:700 }}>
-                    {"⚠️".repeat(s)}<br/><span style={{fontSize:8}}>{["Light","Moderate","Severe"][s-1]}</span>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 9, color: "#94a3b8", fontWeight: 700, letterSpacing: 0.5, marginBottom: 5 }}>SEVERITY</div>
+              <div style={{ display: "flex", gap: 6 }}>
+                {[1, 2, 3].map(s => (
+                  <button key={s} onClick={() => setSeverity(s)} style={{ flex: 1, padding: "8px 4px", borderRadius: 8, border: `2px solid ${severity === s ? "#dc2626" : "#e2e8f0"}`, background: severity === s ? "#fee2e2" : "#f8fafc", color: severity === s ? "#991b1b" : "#64748b", cursor: "pointer", fontSize: 10, fontWeight: 700 }}>
+                    {"⚠️".repeat(s)}<br /><span style={{ fontSize: 8 }}>{["Light", "Moderate", "Severe"][s - 1]}</span>
                   </button>
                 ))}
               </div>
             </div>
-            <div style={{ marginBottom:16 }}>
-              <div style={{ fontSize:9, color:"#94a3b8", fontWeight:700, letterSpacing:0.5, marginBottom:5 }}>DESCRIPTION (optional)</div>
-              <textarea value={desc} onChange={e=>setDesc(e.target.value)} placeholder="e.g. Dust wall approaching from the west near Hwy 99…" style={{ width:"100%", background:"#f8fafc", border:"1px solid #e2e8f0", borderRadius:8, padding:"8px 12px", color:"#1e293b", fontSize:12, resize:"none", outline:"none", boxSizing:"border-box" }} rows={3}/>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 9, color: "#94a3b8", fontWeight: 700, letterSpacing: 0.5, marginBottom: 5 }}>DESCRIPTION (optional)</div>
+              <textarea value={desc} onChange={e => setDesc(e.target.value)} placeholder="e.g. Dust wall approaching from the west near Hwy 99…" style={{ width: "100%", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 12px", color: "#1e293b", fontSize: 12, resize: "none", outline: "none", boxSizing: "border-box" }} rows={3} />
             </div>
-            <button onClick={submit} disabled={submitting} style={{ width:"100%", background:"#dc2626", border:"none", borderRadius:12, padding:"13px", color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", opacity:submitting?0.6:1 }}>
-              {submitting?"Submitting…":"Submit Report"}
+            <button onClick={submit} disabled={submitting} style={{ width: "100%", background: "#dc2626", border: "none", borderRadius: 12, padding: "13px", color: "#fff", fontWeight: 800, fontSize: 14, cursor: "pointer", opacity: submitting ? 0.6 : 1 }}>
+              {submitting ? "Submitting…" : "Submit Report"}
             </button>
           </>
         )}
@@ -629,51 +629,51 @@ function SmsModal({ county, onClose }) {
   const [lang, setLang] = useState("english");
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(null);
-  const langs = [{id:"english",label:"English",e:"🇺🇸"},{id:"spanish",label:"Español",e:"🇲🇽"},{id:"hmong",label:"Hmong",e:"🌏"},{id:"punjabi",label:"ਪੰਜਾਬੀ",e:"🌏"}];
+  const langs = [{ id: "english", label: "English", e: "🇺🇸" }, { id: "spanish", label: "Español", e: "🇲🇽" }, { id: "hmong", label: "Hmong", e: "🌏" }, { id: "punjabi", label: "ਪੰਜਾਬੀ", e: "🌏" }];
 
   const submit = async () => {
     if (!phone.trim()) return;
     setSubmitting(true);
     try {
-      const r = await fetch(`${API}/alerts/subscribe`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({phone,county,language:lang}), signal:AbortSignal.timeout(8000) });
+      const r = await fetch(`${API}/alerts/subscribe`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ phone, county, language: lang }), signal: AbortSignal.timeout(8000) });
       setDone(await r.json());
-    } catch { setDone({success:true,message:`Subscribed for ${lang} alerts in ${county} County.`}); }
+    } catch { setDone({ success: true, message: `Subscribed for ${lang} alerts in ${county} County.` }); }
     setSubmitting(false);
   };
 
   return (
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.35)", zIndex:10000, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
-      <div style={{ background:"#fff", borderRadius:"20px 20px 0 0", width:"100%", maxWidth:480, padding:"24px 20px 40px", boxShadow:"0 -4px 32px rgba(0,0,0,0.1)" }}>
-        <div style={{ display:"flex", justifyContent:"space-between", marginBottom:16 }}>
-          <div style={{ fontWeight:900, fontSize:16, color:"#1e293b" }}>📱 SMS Alerts</div>
-          <button onClick={onClose} style={{ background:"none", border:"none", color:"#94a3b8", fontSize:20, cursor:"pointer" }}>✕</button>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", zIndex: 10000, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+      <div style={{ background: "#fff", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, padding: "24px 20px 40px", boxShadow: "0 -4px 32px rgba(0,0,0,0.1)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+          <div style={{ fontWeight: 900, fontSize: 16, color: "#1e293b" }}>📱 SMS Alerts</div>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 20, cursor: "pointer" }}>✕</button>
         </div>
         {done ? (
-          <div style={{ textAlign:"center", padding:"20px 0" }}>
-            <div style={{ fontSize:40, marginBottom:8 }}>✅</div>
-            <div style={{ color:"#1e293b", fontWeight:700, fontSize:15, marginBottom:6 }}>Subscribed!</div>
-            <div style={{ color:"#64748b", fontSize:12, lineHeight:1.6 }}>{done.message}</div>
-            <button onClick={onClose} style={{ marginTop:16, background:"#16a34a", border:"none", borderRadius:12, padding:"10px 24px", color:"#fff", fontWeight:700, cursor:"pointer" }}>Done</button>
+          <div style={{ textAlign: "center", padding: "20px 0" }}>
+            <div style={{ fontSize: 40, marginBottom: 8 }}>✅</div>
+            <div style={{ color: "#1e293b", fontWeight: 700, fontSize: 15, marginBottom: 6 }}>Subscribed!</div>
+            <div style={{ color: "#64748b", fontSize: 12, lineHeight: 1.6 }}>{done.message}</div>
+            <button onClick={onClose} style={{ marginTop: 16, background: "#16a34a", border: "none", borderRadius: 12, padding: "10px 24px", color: "#fff", fontWeight: 700, cursor: "pointer" }}>Done</button>
           </div>
         ) : (
           <>
-            <div style={{ fontSize:11, color:"#64748b", marginBottom:14, lineHeight:1.6 }}>Receive a free alert when Valley Fever risk in <strong style={{color:"#1e293b"}}>{county} County</strong> reaches High or Very High.</div>
-            <div style={{ marginBottom:12 }}>
-              <div style={{ fontSize:9, color:"#94a3b8", fontWeight:700, letterSpacing:0.5, marginBottom:5 }}>PHONE NUMBER</div>
-              <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+1 (555) 000-0000" style={{ width:"100%", background:"#f8fafc", border:"1px solid #e2e8f0", borderRadius:8, padding:"10px 12px", color:"#1e293b", fontSize:13, outline:"none", boxSizing:"border-box" }}/>
+            <div style={{ fontSize: 11, color: "#64748b", marginBottom: 14, lineHeight: 1.6 }}>Receive a free alert when Valley Fever risk in <strong style={{ color: "#1e293b" }}>{county} County</strong> reaches High or Very High.</div>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 9, color: "#94a3b8", fontWeight: 700, letterSpacing: 0.5, marginBottom: 5 }}>PHONE NUMBER</div>
+              <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+1 (555) 000-0000" style={{ width: "100%", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 12px", color: "#1e293b", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
             </div>
-            <div style={{ marginBottom:16 }}>
-              <div style={{ fontSize:9, color:"#94a3b8", fontWeight:700, letterSpacing:0.5, marginBottom:5 }}>LANGUAGE</div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
-                {langs.map(l=>(
-                  <button key={l.id} onClick={()=>setLang(l.id)} style={{ padding:"8px", borderRadius:8, border:`2px solid ${lang===l.id?"#3b82f6":"#e2e8f0"}`, background:lang===l.id?"#eff6ff":"#f8fafc", color:lang===l.id?"#1d4ed8":"#64748b", cursor:"pointer", fontSize:12, fontWeight:600 }}>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 9, color: "#94a3b8", fontWeight: 700, letterSpacing: 0.5, marginBottom: 5 }}>LANGUAGE</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                {langs.map(l => (
+                  <button key={l.id} onClick={() => setLang(l.id)} style={{ padding: "8px", borderRadius: 8, border: `2px solid ${lang === l.id ? "#3b82f6" : "#e2e8f0"}`, background: lang === l.id ? "#eff6ff" : "#f8fafc", color: lang === l.id ? "#1d4ed8" : "#64748b", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
                     {l.e} {l.label}
                   </button>
                 ))}
               </div>
             </div>
-            <button onClick={submit} disabled={submitting||!phone.trim()} style={{ width:"100%", background:"#3b82f6", border:"none", borderRadius:12, padding:"13px", color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", opacity:(submitting||!phone.trim())?0.5:1 }}>
-              {submitting?"Subscribing…":"Subscribe to Alerts"}
+            <button onClick={submit} disabled={submitting || !phone.trim()} style={{ width: "100%", background: "#3b82f6", border: "none", borderRadius: 12, padding: "13px", color: "#fff", fontWeight: 800, fontSize: 14, cursor: "pointer", opacity: (submitting || !phone.trim()) ? 0.5 : 1 }}>
+              {submitting ? "Subscribing…" : "Subscribe to Alerts"}
             </button>
           </>
         )}
@@ -684,33 +684,33 @@ function SmsModal({ county, onClose }) {
 
 // ── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
-  const [view, setView] = useState(()=>sessionStorage.getItem("sr_seen")?"map":"landing");
-  const [geoData, setGeoData] = useState(()=>{ try{const c=sessionStorage.getItem("sr_geo");return c?JSON.parse(c):null;}catch{return null;} });
+  const [view, setView] = useState(() => sessionStorage.getItem("sr_seen") ? "map" : "landing");
+  const [geoData, setGeoData] = useState(() => { try { const c = sessionStorage.getItem("sr_geo"); return c ? JSON.parse(c) : null; } catch { return null; } });
   const [geoLoading, setGeoLoading] = useState(!sessionStorage.getItem("sr_geo"));
-  const [geoError,   setGeoError]   = useState(null);
+  const [geoError, setGeoError] = useState(null);
 
-  const [sel,  setSel]  = useState(null);
-  const [sh,   setSh]   = useState(0);
-  const [co,   setCo]   = useState(false);
-  const [msgs, setMsgs] = useState([{r:"b",t:"SporeRisk AI — Ask about Valley Fever symptoms, prevention, treatment, clinics, or risk in any county."}]);
-  const [ci,   setCi]   = useState("");
-  const [cb,   setCb]   = useState(false);
+  const [sel, setSel] = useState(null);
+  const [sh, setSh] = useState(0);
+  const [co, setCo] = useState(false);
+  const [msgs, setMsgs] = useState([{ r: "b", t: "SporeRisk AI — Ask about Valley Fever symptoms, prevention, treatment, clinics, or risk in any county." }]);
+  const [ci, setCi] = useState("");
+  const [cb, setCb] = useState(false);
   const ce = useRef(null);
 
-  const [apiCounties,   setApiCounties]   = useState({});
-  const [apiDetail,     setApiDetail]     = useState(null);
-  const [apiHistory,    setApiHistory]    = useState(null);
-  const [apiSummary,    setApiSummary]    = useState(null);
-  const [apiInsights,   setApiInsights]   = useState(null);
+  const [apiCounties, setApiCounties] = useState({});
+  const [apiDetail, setApiDetail] = useState(null);
+  const [apiHistory, setApiHistory] = useState(null);
+  const [apiSummary, setApiSummary] = useState(null);
+  const [apiInsights, setApiInsights] = useState(null);
   const [apiEnvHistory, setApiEnvHistory] = useState(null);
-  const [apiReports,    setApiReports]    = useState(null);
-  const [apiConnected,  setApiConnected]  = useState(false);
+  const [apiReports, setApiReports] = useState(null);
+  const [apiConnected, setApiConnected] = useState(false);
 
-  const [mapMode,       setMapMode]       = useState("normal");
-  const [vulnZones,     setVulnZones]     = useState([]);
-  const [clinicsData,   setClinicsData]   = useState([]);
+  const [mapMode, setMapMode] = useState("normal");
+  const [vulnZones, setVulnZones] = useState([]);
+  const [clinicsData, setClinicsData] = useState([]);
   const [showReport, setShowReport] = useState(false);
-  const [showSms,    setShowSms]    = useState(false);
+  const [showSms, setShowSms] = useState(false);
 
   // Geolocation
   useEffect(() => {
@@ -718,17 +718,17 @@ export default function App() {
     if (!navigator.geolocation) { setGeoError("Geolocation not supported"); setGeoLoading(false); return; }
     navigator.geolocation.getCurrentPosition(async pos => {
       const d = await apiFetch(`/risk?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`);
-      if (d) { setGeoData(d); try{sessionStorage.setItem("sr_geo",JSON.stringify(d));}catch{} }
+      if (d) { setGeoData(d); try { sessionStorage.setItem("sr_geo", JSON.stringify(d)); } catch { } }
       else setGeoError("County not in tracked area");
       setGeoLoading(false);
-    }, () => { setGeoError("Location access denied"); setGeoLoading(false); }, {timeout:8000,maximumAge:300000});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, () => { setGeoError("Location access denied"); setGeoLoading(false); }, { timeout: 8000, maximumAge: 300000 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Counties list
   useEffect(() => {
-    apiFetch("/counties").then(d=>{
-      if(d?.counties){ setApiConnected(true); const m={}; d.counties.forEach(c=>{m[c.county]=c;}); setApiCounties(m); }
+    apiFetch("/counties").then(d => {
+      if (d?.counties) { setApiConnected(true); const m = {}; d.counties.forEach(c => { m[c.county] = c; }); setApiCounties(m); }
     });
   }, []);
 
@@ -743,157 +743,157 @@ export default function App() {
       apiFetch(`/insights/${encodeURIComponent(sel)}`),
       apiFetch(`/env-history/${encodeURIComponent(sel)}`),
       apiFetch(`/reports/${encodeURIComponent(sel)}`),
-    ]).then(([risk,hist,summ,ins,env,rep])=>{
-      if(risk) setApiDetail(risk);
-      if(hist) setApiHistory(hist);
-      if(summ) setApiSummary(summ);
-      if(ins)  setApiInsights(ins);
-      if(env)  setApiEnvHistory(env);
-      if(rep)  setApiReports(rep);
+    ]).then(([risk, hist, summ, ins, env, rep]) => {
+      if (risk) setApiDetail(risk);
+      if (hist) setApiHistory(hist);
+      if (summ) setApiSummary(summ);
+      if (ins) setApiInsights(ins);
+      if (env) setApiEnvHistory(env);
+      if (rep) setApiReports(rep);
     });
   }, [sel]);
 
   // Map mode data
   useEffect(() => {
-    if (mapMode==="vulnerable" && vulnZones.length===0)  apiFetch("/vulnerable-zones").then(d=>{ if(d?.zones) setVulnZones(d.zones); });
-    if (mapMode==="clinics"   && clinicsData.length===0) apiFetch("/clinics").then(d=>{ if(d?.clinics) setClinicsData(d.clinics); });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (mapMode === "vulnerable" && vulnZones.length === 0) apiFetch("/vulnerable-zones").then(d => { if (d?.zones) setVulnZones(d.zones); });
+    if (mapMode === "clinics" && clinicsData.length === 0) apiFetch("/clinics").then(d => { if (d?.clinics) setClinicsData(d.clinics); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapMode]);
 
   const riskByCounty = {};
-  TARGET_COUNTIES.forEach(c=>{ riskByCounty[c]=apiCounties[c]?.risk_level||"Moderate"; });
+  TARGET_COUNTIES.forEach(c => { riskByCounty[c] = apiCounties[c]?.risk_level || "Moderate"; });
 
-  const currentRisk      = sel ? (apiCounties[sel]?.risk_level||apiDetail?.risk_level||"Unknown") : null;
+  const currentRisk = sel ? (apiCounties[sel]?.risk_level || apiDetail?.risk_level || "Unknown") : null;
   const currentRiskScore = sel ? (apiCounties[sel]?.risk_score ?? apiDetail?.risk_score ?? 0) : 0;
-  const contextRisk      = (currentRisk && currentRisk!=="Unknown") ? currentRisk : (geoData?.risk_level||"Low");
+  const contextRisk = (currentRisk && currentRisk !== "Unknown") ? currentRisk : (geoData?.risk_level || "Low");
   const lPal = getLightPal(contextRisk);
 
-  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   const chartData = (() => {
     if (!apiHistory) return [];
-    const rec = apiHistory.records||apiHistory.history||[];
-    return rec.map(h=>({ d:`${MONTHS[h.month-1]}'${String(h.year).slice(2)}`, riskScore:h.risk_score??null, actual:h.monthly_cases>0?Math.round(h.monthly_cases):null })).filter(r=>r.riskScore!=null);
+    const rec = apiHistory.records || apiHistory.history || [];
+    return rec.map(h => ({ d: `${MONTHS[h.month - 1]}'${String(h.year).slice(2)}`, riskScore: h.risk_score ?? null, actual: h.monthly_cases > 0 ? Math.round(h.monthly_cases) : null })).filter(r => r.riskScore != null);
   })();
 
   const envData = apiEnvHistory?.records || [];
-  const lastActIdx = chartData.reduce((l,c,i)=>c.actual!=null?i:l,-1);
-  const cutLabel = lastActIdx>=0 ? chartData[lastActIdx]?.d : null;
-  const env = apiDetail?.environment||null;
-  const summaryBullets = apiSummary?.summary_bullets||apiDetail?.summary||[];
-  const adviceBullets  = apiSummary?.advice||apiDetail?.advice||[];
-  const insightBullets = apiInsights?.insights||[];
+  const lastActIdx = chartData.reduce((l, c, i) => c.actual != null ? i : l, -1);
+  const cutLabel = lastActIdx >= 0 ? chartData[lastActIdx]?.d : null;
+  const env = apiDetail?.environment || null;
+  const summaryBullets = apiSummary?.summary_bullets || apiDetail?.summary || [];
+  const adviceBullets = apiSummary?.advice || apiDetail?.advice || [];
+  const insightBullets = apiInsights?.insights || [];
 
   const send = async () => {
-    if (!ci.trim()||cb) return;
-    const m=ci.trim(); setCi(""); setMsgs(p=>[...p,{r:"u",t:m}]); setCb(true);
+    if (!ci.trim() || cb) return;
+    const m = ci.trim(); setCi(""); setMsgs(p => [...p, { r: "u", t: m }]); setCb(true);
     try {
-      const body={message:m}; if(sel) body.county=sel;
-      const r=await fetch(`${API}/chat`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body),signal:AbortSignal.timeout(15000)});
-      const d=await r.json();
-      if(d.reply){setMsgs(p=>[...p,{r:"b",t:d.reply}]);setCb(false);return;}
-    } catch {}
-    const lo=m.toLowerCase();
-    let rp="Ask about Valley Fever symptoms, prevention, clinics, or risk levels.";
-    if(lo.includes("symptom")) rp="Symptoms: persistent cough, fever/chills, fatigue, chest pain, joint aches, rash. See a doctor if lasting > 1–2 weeks.";
-    else if(lo.includes("prevent")||lo.includes("mask")) rp="Wear an N95 mask in dusty conditions. Avoid disturbed soil. Close windows during dust storms.";
-    else if(lo.includes("clinic")||lo.includes("hospital")) rp="Kern Medical, Community Medical (Fresno), Mercy Medical (Merced), and county health departments all treat Valley Fever.";
-    else if(sel) rp=`${sel} County is at ${currentRisk} risk. ${summaryBullets[0]||""}`;
-    setMsgs(p=>[...p,{r:"b",t:rp}]); setCb(false);
+      const body = { message: m }; if (sel) body.county = sel;
+      const r = await fetch(`${API}/chat`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(15000) });
+      const d = await r.json();
+      if (d.reply) { setMsgs(p => [...p, { r: "b", t: d.reply }]); setCb(false); return; }
+    } catch { }
+    const lo = m.toLowerCase();
+    let rp = "Ask about Valley Fever symptoms, prevention, clinics, or risk levels.";
+    if (lo.includes("symptom")) rp = "Symptoms: persistent cough, fever/chills, fatigue, chest pain, joint aches, rash. See a doctor if lasting > 1–2 weeks.";
+    else if (lo.includes("prevent") || lo.includes("mask")) rp = "Wear an N95 mask in dusty conditions. Avoid disturbed soil. Close windows during dust storms.";
+    else if (lo.includes("clinic") || lo.includes("hospital")) rp = "Kern Medical, Community Medical (Fresno), Mercy Medical (Merced), and county health departments all treat Valley Fever.";
+    else if (sel) rp = `${sel} County is at ${currentRisk} risk. ${summaryBullets[0] || ""}`;
+    setMsgs(p => [...p, { r: "b", t: rp }]); setCb(false);
   };
 
-  useEffect(()=>{ ce.current?.scrollIntoView({behavior:"smooth"}); },[msgs]);
+  useEffect(() => { ce.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs]);
 
   const tap = c => { setSel(c); setSh(prev => prev > 0 ? prev : 1); };
-  const closeSheet = () => { setSh(0);setSel(null); };
-  const goMap = county => { sessionStorage.setItem("sr_seen","1"); setView("map"); if(county){setSel(county);setSh(1);} };
+  const closeSheet = () => { setSh(0); setSel(null); };
+  const goMap = county => { sessionStorage.setItem("sr_seen", "1"); setView("map"); if (county) { setSel(county); setSh(1); } };
 
   const NAV_H = 88;
 
   // ── LANDING ────────────────────────────────────────────────────────────────
   if (view === "landing") {
-    const dp = getDarkPal(geoData?.risk_level||"Low");
-    const rs = geoData?.risk_score||0;
+    const dp = getDarkPal(geoData?.risk_level || "Low");
+    const rs = geoData?.risk_score || 0;
     const rl = geoData?.risk_level;
     const dc = geoData?.detected_county;
-    const isHigh = rs>=8;
+    const isHigh = rs >= 8;
 
     return (
-      <div style={{ minHeight:"100vh", maxWidth:480, margin:"0 auto", background:dp.bg, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"space-between", fontFamily:"'Inter',system-ui,sans-serif", padding:"0 20px 40px", position:"relative", overflow:"hidden" }}>
-        <div style={{ position:"absolute", top:"28%", left:"50%", transform:"translateX(-50%)", width:260, height:260, borderRadius:"50%", background:`radial-gradient(circle,${dp.glow} 0%,transparent 70%)`, pointerEvents:"none" }}/>
+      <div style={{ minHeight: "100vh", maxWidth: 480, margin: "0 auto", background: dp.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between", fontFamily: "'Inter',system-ui,sans-serif", padding: "0 20px 40px", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", top: "28%", left: "50%", transform: "translateX(-50%)", width: 260, height: 260, borderRadius: "50%", background: `radial-gradient(circle,${dp.glow} 0%,transparent 70%)`, pointerEvents: "none" }} />
 
-        <div style={{ width:"100%", display:"flex", justifyContent:"space-between", alignItems:"center", paddingTop:24 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <span style={{ fontSize:22 }}>🍄</span>
-            <span style={{ fontWeight:900, fontSize:20, color:"#fff", letterSpacing:-0.5 }}>SporeRisk</span>
+        <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 24 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 22 }}>🍄</span>
+            <span style={{ fontWeight: 900, fontSize: 20, color: "#fff", letterSpacing: -0.5 }}>SporeRisk</span>
           </div>
-          <div style={{ fontSize:9, padding:"4px 10px", borderRadius:12, fontWeight:700, background:apiConnected?"rgba(34,197,94,0.2)":"rgba(255,255,255,0.1)", color:apiConnected?"#4ade80":"#94a3b8", border:`1px solid ${apiConnected?"rgba(34,197,94,0.4)":"rgba(255,255,255,0.12)"}` }}>
-            {apiConnected?"● Live":"● Connecting…"}
+          <div style={{ fontSize: 9, padding: "4px 10px", borderRadius: 12, fontWeight: 700, background: apiConnected ? "rgba(34,197,94,0.2)" : "rgba(255,255,255,0.1)", color: apiConnected ? "#4ade80" : "#94a3b8", border: `1px solid ${apiConnected ? "rgba(34,197,94,0.4)" : "rgba(255,255,255,0.12)"}` }}>
+            {apiConnected ? "● Live" : "● Connecting…"}
           </div>
         </div>
 
-        <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", width:"100%" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%" }}>
           {geoLoading ? (
-            <div style={{ textAlign:"center" }}>
-              <div style={{ width:56, height:56, borderRadius:"50%", border:"3px solid rgba(255,255,255,0.1)", borderTopColor:"#fff", animation:"spin 1s linear infinite", margin:"0 auto 16px" }}/>
-              <div style={{ color:"rgba(255,255,255,0.5)", fontSize:13 }}>Detecting your location…</div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ width: 56, height: 56, borderRadius: "50%", border: "3px solid rgba(255,255,255,0.1)", borderTopColor: "#fff", animation: "spin 1s linear infinite", margin: "0 auto 16px" }} />
+              <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 13 }}>Detecting your location…</div>
             </div>
           ) : (
             <>
-              <CircularRiskGauge riskScore={rs} riskLevel={rl} county={dc} size={236}/>
+              <CircularRiskGauge riskScore={rs} riskLevel={rl} county={dc} size={236} />
               {!geoError && dc && (
-                <div style={{ textAlign:"center", marginTop:18, maxWidth:300 }}>
-                  <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)", marginBottom:6 }}>Valley Fever Risk · California Central Valley</div>
+                <div style={{ textAlign: "center", marginTop: 18, maxWidth: 300 }}>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", marginBottom: 6 }}>Valley Fever Risk · California Central Valley</div>
                   {isHigh ? (
-                    <div style={{ background:"rgba(220,38,38,0.18)", border:"1px solid rgba(220,38,38,0.35)", borderRadius:10, padding:"10px 14px", marginTop:8, fontSize:11, color:"#fca5a5", lineHeight:1.6 }}>
-                      ⚠️ {rl==="Very High" ? "CRITICAL CONDITIONS: Take immediate action to protect yourself." : "Elevated risk detected. Take precautions before going outdoors."}
+                    <div style={{ background: "rgba(220,38,38,0.18)", border: "1px solid rgba(220,38,38,0.35)", borderRadius: 10, padding: "10px 14px", marginTop: 8, fontSize: 11, color: "#fca5a5", lineHeight: 1.6 }}>
+                      ⚠️ {rl === "Very High" ? "CRITICAL CONDITIONS: Take immediate action to protect yourself." : "Elevated risk detected. Take precautions before going outdoors."}
                     </div>
                   ) : (
-                    <div style={{ background:"rgba(255,255,255,0.07)", borderRadius:10, padding:"8px 14px", marginTop:8, fontSize:11, color:"rgba(255,255,255,0.55)", lineHeight:1.6 }}>
+                    <div style={{ background: "rgba(255,255,255,0.07)", borderRadius: 10, padding: "8px 14px", marginTop: 8, fontSize: 11, color: "rgba(255,255,255,0.55)", lineHeight: 1.6 }}>
                       Conditions are manageable in {dc} County today.
                     </div>
                   )}
                 </div>
               )}
-              {geoError && <div style={{ textAlign:"center", marginTop:16, color:"rgba(255,255,255,0.35)", fontSize:12 }}>{geoError} — Explore the map manually</div>}
+              {geoError && <div style={{ textAlign: "center", marginTop: 16, color: "rgba(255,255,255,0.35)", fontSize: 12 }}>{geoError} — Explore the map manually</div>}
             </>
           )}
         </div>
 
-        <div style={{ width:"100%", display:"flex", flexDirection:"column", gap:10 }}>
-          {isHigh && geoData?.advice?.length>0 && (
-            <div style={{ background:"rgba(220,38,38,0.12)", border:"1px solid rgba(220,38,38,0.28)", borderRadius:12, padding:"10px 14px" }}>
-              <div style={{ fontSize:9, color:"#f87171", fontWeight:700, letterSpacing:1, marginBottom:5 }}>⚠️ IMMEDIATE ACTIONS</div>
-              {geoData.advice.slice(0,3).map((a,i)=><div key={i} style={{ fontSize:11, color:"#fca5a5", lineHeight:1.6, marginBottom:2 }}>• {a}</div>)}
+        <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 10 }}>
+          {isHigh && geoData?.advice?.length > 0 && (
+            <div style={{ background: "rgba(220,38,38,0.12)", border: "1px solid rgba(220,38,38,0.28)", borderRadius: 12, padding: "10px 14px" }}>
+              <div style={{ fontSize: 9, color: "#f87171", fontWeight: 700, letterSpacing: 1, marginBottom: 5 }}>⚠️ IMMEDIATE ACTIONS</div>
+              {geoData.advice.slice(0, 3).map((a, i) => <div key={i} style={{ fontSize: 11, color: "#fca5a5", lineHeight: 1.6, marginBottom: 2 }}>• {a}</div>)}
             </div>
           )}
-          <button onClick={()=>goMap(dc)} style={{ width:"100%", padding:"14px", borderRadius:14, border:"none", background:isHigh?"#dc2626":"rgba(255,255,255,0.14)", color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer" }}>
-            {isHigh?"⚠️ View Risk Map & Details →":"View Map →"}
+          <button onClick={() => goMap(dc)} style={{ width: "100%", padding: "14px", borderRadius: 14, border: "none", background: isHigh ? "#dc2626" : "rgba(255,255,255,0.14)", color: "#fff", fontWeight: 800, fontSize: 15, cursor: "pointer" }}>
+            {isHigh ? "⚠️ View Risk Map & Details →" : "View Map →"}
           </button>
-          <div style={{ display:"flex", gap:8 }}>
-            <button onClick={()=>{sessionStorage.setItem("sr_seen","1");setView("map");setShowSms(true);}} style={{ flex:1, padding:"10px", borderRadius:12, border:"1px solid rgba(255,255,255,0.14)", background:"rgba(255,255,255,0.06)", color:"rgba(255,255,255,0.65)", fontSize:11, fontWeight:700, cursor:"pointer" }}>📱 Get SMS Alerts</button>
-            <button onClick={()=>setCo(c=>!c)} style={{ flex:1, padding:"10px", borderRadius:12, border:"1px solid rgba(255,255,255,0.14)", background:"rgba(255,255,255,0.06)", color:"rgba(255,255,255,0.65)", fontSize:11, fontWeight:700, cursor:"pointer" }}>💬 Ask AI</button>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={() => { sessionStorage.setItem("sr_seen", "1"); setView("map"); setShowSms(true); }} style={{ flex: 1, padding: "10px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.65)", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>📱 Get SMS Alerts</button>
+            <button onClick={() => setCo(c => !c)} style={{ flex: 1, padding: "10px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.65)", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>💬 Ask AI</button>
           </div>
         </div>
 
         {co && (
-          <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, height:"70vh", background:"#111827", borderRadius:"16px 16px 0 0", boxShadow:"0 -4px 24px rgba(0,0,0,0.3)", zIndex:400, display:"flex", flexDirection:"column", border:"1px solid #1f2937" }}>
-            <div style={{ padding:"12px 16px 8px", display:"flex", justifyContent:"space-between", alignItems:"center", borderBottom:"1px solid #1f2937" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:6 }}><span>🍄</span><span style={{ fontWeight:800, fontSize:14, color:"#f9fafb" }}>SporeRisk AI</span></div>
-              <button onClick={()=>setCo(false)} style={{ background:"none", border:"none", fontSize:18, cursor:"pointer", color:"#6b7280" }}>✕</button>
+          <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, height: "70vh", background: "#111827", borderRadius: "16px 16px 0 0", boxShadow: "0 -4px 24px rgba(0,0,0,0.3)", zIndex: 400, display: "flex", flexDirection: "column", border: "1px solid #1f2937" }}>
+            <div style={{ padding: "12px 16px 8px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #1f2937" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}><span>🍄</span><span style={{ fontWeight: 800, fontSize: 14, color: "#f9fafb" }}>SporeRisk AI</span></div>
+              <button onClick={() => setCo(false)} style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#6b7280" }}>✕</button>
             </div>
-            <div style={{ flex:1, overflowY:"auto", padding:"0 12px 8px" }}>
-              {msgs.map((m,i)=>(
-                <div key={i} style={{ display:"flex", justifyContent:m.r==="u"?"flex-end":"flex-start", marginBottom:8, marginTop:8 }}>
-                  <div style={{ maxWidth:"82%", padding:"8px 12px", fontSize:12, lineHeight:1.5, borderRadius:12, background:m.r==="u"?"#3b82f6":"#1f2937", color:m.r==="u"?"#fff":"#9ca3af" }}>{m.t}</div>
+            <div style={{ flex: 1, overflowY: "auto", padding: "0 12px 8px" }}>
+              {msgs.map((m, i) => (
+                <div key={i} style={{ display: "flex", justifyContent: m.r === "u" ? "flex-end" : "flex-start", marginBottom: 8, marginTop: 8 }}>
+                  <div style={{ maxWidth: "82%", padding: "8px 12px", fontSize: 12, lineHeight: 1.5, borderRadius: 12, background: m.r === "u" ? "#3b82f6" : "#1f2937", color: m.r === "u" ? "#fff" : "#9ca3af" }}>{m.t}</div>
                 </div>
               ))}
-              {cb && <div style={{ display:"flex", gap:4, padding:"4px 0" }}>{[0,1,2].map(i=><div key={i} style={{ width:6,height:6,borderRadius:3,background:"#374151",animation:`bounce 1s ${i*0.15}s infinite` }}/>)}</div>}
-              <div ref={ce}/>
+              {cb && <div style={{ display: "flex", gap: 4, padding: "4px 0" }}>{[0, 1, 2].map(i => <div key={i} style={{ width: 6, height: 6, borderRadius: 3, background: "#374151", animation: `bounce 1s ${i * 0.15}s infinite` }} />)}</div>}
+              <div ref={ce} />
             </div>
-            <div style={{ padding:"8px 12px 16px", borderTop:"1px solid #1f2937", display:"flex", gap:8 }}>
-              <input value={ci} onChange={e=>setCi(e.target.value)} onKeyDown={e=>e.key==="Enter"&&send()} placeholder="Ask about Valley Fever…" style={{ flex:1, border:"1px solid #374151", borderRadius:20, padding:"8px 14px", fontSize:13, outline:"none", background:"#1f2937", color:"#f9fafb" }} disabled={cb}/>
-              <button onClick={send} disabled={cb||!ci.trim()} style={{ background:"#6366f1", border:"none", borderRadius:20, padding:"8px 16px", color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer", opacity:cb||!ci.trim()?0.5:1 }}>↑</button>
+            <div style={{ padding: "8px 12px 16px", borderTop: "1px solid #1f2937", display: "flex", gap: 8 }}>
+              <input value={ci} onChange={e => setCi(e.target.value)} onKeyDown={e => e.key === "Enter" && send()} placeholder="Ask about Valley Fever…" style={{ flex: 1, border: "1px solid #374151", borderRadius: 20, padding: "8px 14px", fontSize: 13, outline: "none", background: "#1f2937", color: "#f9fafb" }} disabled={cb} />
+              <button onClick={send} disabled={cb || !ci.trim()} style={{ background: "#6366f1", border: "none", borderRadius: 20, padding: "8px 16px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", opacity: cb || !ci.trim() ? 0.5 : 1 }}>↑</button>
             </div>
           </div>
         )}
@@ -904,137 +904,137 @@ export default function App() {
   // ── MAP VIEW ───────────────────────────────────────────────────────────────
   return (
     <>
-    <div style={{ height:"100vh", overflow:"hidden", background:lPal.appBg, fontFamily:"'Inter',system-ui,sans-serif", maxWidth:480, margin:"0 auto", position:"relative", transition:"background 0.6s ease", display:"flex", flexDirection:"column" }}>
+      <div style={{ height: "100vh", overflow: "hidden", background: lPal.appBg, fontFamily: "'Inter',system-ui,sans-serif", maxWidth: 480, margin: "0 auto", position: "relative", transition: "background 0.6s ease", display: "flex", flexDirection: "column" }}>
 
-      {/* Header */}
-      <header style={{ padding:"11px 16px", background:"rgba(255,255,255,0.92)", backdropFilter:"blur(10px)", borderBottom:`2px solid ${lPal.headerBorder}`, display:"flex", justifyContent:"space-between", alignItems:"center", position:"sticky", top:0, zIndex:100, transition:"border-color 0.5s ease" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:7 }}>
-          <span style={{ fontSize:18 }}>🍄</span>
-          <span style={{ fontWeight:900, fontSize:18, color:"#1e293b", letterSpacing:-0.5 }}>SporeRisk</span>
-          <span style={{ fontSize:9, color:"#94a3b8", fontWeight:500, marginLeft:2 }}>Central Valley</span>
-        </div>
-        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-          <div style={{ fontSize:9, padding:"3px 8px", borderRadius:10, fontWeight:600, background:apiConnected?lPal.pillBg:"#f1f5f9", color:apiConnected?lPal.pillText:"#64748b", border:`1px solid ${apiConnected?lPal.border:"#e2e8f0"}` }}>
-            {apiConnected?"● Live":"● Connecting…"}
+        {/* Header */}
+        <header style={{ padding: "11px 16px", background: "rgba(255,255,255,0.92)", backdropFilter: "blur(10px)", borderBottom: `2px solid ${lPal.headerBorder}`, display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, zIndex: 100, transition: "border-color 0.5s ease" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+            <span style={{ fontSize: 18 }}>🍄</span>
+            <span style={{ fontWeight: 900, fontSize: 18, color: "#1e293b", letterSpacing: -0.5 }}>SporeRisk</span>
+            <span style={{ fontSize: 9, color: "#94a3b8", fontWeight: 500, marginLeft: 2 }}>Central Valley</span>
           </div>
-          {geoData?.detected_county && (
-            <div style={{ fontSize:9, padding:"3px 8px", borderRadius:10, fontWeight:600, background:"#f1f5f9", color:"#475569", border:"1px solid #e2e8f0" }}>
-              📍 {geoData.detected_county}
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ fontSize: 9, padding: "3px 8px", borderRadius: 10, fontWeight: 600, background: apiConnected ? lPal.pillBg : "#f1f5f9", color: apiConnected ? lPal.pillText : "#64748b", border: `1px solid ${apiConnected ? lPal.border : "#e2e8f0"}` }}>
+              {apiConnected ? "● Live" : "● Connecting…"}
             </div>
-          )}
-        </div>
-      </header>
+            {geoData?.detected_county && (
+              <div style={{ fontSize: 9, padding: "3px 8px", borderRadius: 10, fontWeight: 600, background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0" }}>
+                📍 {geoData.detected_county}
+              </div>
+            )}
+          </div>
+        </header>
 
-      {/* Map section — fills all remaining viewport height */}
-      <div style={{ display:"flex", flexDirection:"column", flex:1, minHeight:0, overflow:"hidden" }}>
-        {/* Mode selector */}
-        <div style={{ background:"rgba(255,255,255,0.92)", backdropFilter:"blur(4px)", padding:"8px 12px", borderBottom:"1px solid #e2e8f0", flexShrink:0, display:"flex", gap:5 }}>
-          {[{id:"normal",lbl:"Normal",icon:"🗺️"},{id:"vulnerable",lbl:"Vulnerable",icon:"👥"},{id:"clinics",lbl:"Clinics",icon:"🏥"}].map(m=>(
-            <button key={m.id} onClick={()=>setMapMode(m.id)} style={{
-              flex:1, padding:"7px 4px", borderRadius:20,
-              border:`1.5px solid ${mapMode===m.id ? lPal.accent : "#e2e8f0"}`,
-              background: mapMode===m.id ? lPal.pillBg : "#fff",
-              color: mapMode===m.id ? lPal.pillText : "#94a3b8",
-              fontWeight: mapMode===m.id ? 700 : 500,
-              fontSize:10, cursor:"pointer", transition:"all 0.2s",
-            }}>{m.icon} {m.lbl}</button>
-          ))}
+        {/* Map section — fills all remaining viewport height */}
+        <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, overflow: "hidden" }}>
+          {/* Mode selector */}
+          <div style={{ background: "rgba(255,255,255,0.92)", backdropFilter: "blur(4px)", padding: "8px 12px", borderBottom: "1px solid #e2e8f0", flexShrink: 0, display: "flex", gap: 5 }}>
+            {[{ id: "normal", lbl: "Normal", icon: "🗺️" }, { id: "vulnerable", lbl: "Vulnerable", icon: "👥" }, { id: "clinics", lbl: "Clinics", icon: "🏥" }].map(m => (
+              <button key={m.id} onClick={() => setMapMode(m.id)} style={{
+                flex: 1, padding: "7px 4px", borderRadius: 20,
+                border: `1.5px solid ${mapMode === m.id ? lPal.accent : "#e2e8f0"}`,
+                background: mapMode === m.id ? lPal.pillBg : "#fff",
+                color: mapMode === m.id ? lPal.pillText : "#94a3b8",
+                fontWeight: mapMode === m.id ? 700 : 500,
+                fontSize: 10, cursor: "pointer", transition: "all 0.2s",
+              }}>{m.icon} {m.lbl}</button>
+            ))}
+          </div>
+
+          {/* Map fills the rest */}
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <CaliforniaMap
+              selectedCounty={sel} riskByCounty={riskByCounty} onCountyClick={tap}
+              mapMode={mapMode} vulnZones={vulnZones} clinics={clinicsData}
+              onLocate={r => { if (r.county) tap(r.county); }}
+            />
+          </div>
         </div>
 
-        {/* Map fills the rest */}
-        <div style={{ flex:1, minHeight:0 }}>
-          <CaliforniaMap
-            selectedCounty={sel} riskByCounty={riskByCounty} onCountyClick={tap}
-            mapMode={mapMode} vulnZones={vulnZones} clinics={clinicsData}
-            onLocate={r => { if(r.county) tap(r.county); }}
-          />
-        </div>
       </div>
 
-    </div>
-
-    {/* Bottom sheet — outside overflow:hidden root */}
-    {sel && sh>0 && (
-      <div onClick={e => e.stopPropagation()} style={{
-        position:"fixed", bottom:NAV_H, left:"50%", transform:"translateX(-50%)",
-        width:"100%", maxWidth:480,
-        background:"#fff",
-        borderRadius:"18px 18px 0 0",
-        boxShadow:"0 -2px 24px rgba(0,0,0,0.1)",
-        borderTop:`3px solid ${lPal.accent}`,
-        zIndex:5000,
-        height: sh===1?"46vh":`calc(92vh - ${NAV_H}px)`,
-          transition:"height 0.3s cubic-bezier(0.32,0.72,0,1)",
-          display:"flex", flexDirection:"column",
+      {/* Bottom sheet — outside overflow:hidden root */}
+      {sel && sh > 0 && (
+        <div onClick={e => e.stopPropagation()} style={{
+          position: "fixed", bottom: NAV_H, left: "50%", transform: "translateX(-50%)",
+          width: "100%", maxWidth: 480,
+          background: "#fff",
+          borderRadius: "18px 18px 0 0",
+          boxShadow: "0 -2px 24px rgba(0,0,0,0.1)",
+          borderTop: `3px solid ${lPal.accent}`,
+          zIndex: 5000,
+          height: sh === 1 ? "46vh" : `calc(92vh - ${NAV_H}px)`,
+          transition: "height 0.3s cubic-bezier(0.32,0.72,0,1)",
+          display: "flex", flexDirection: "column",
         }}>
           {/* Handle */}
-          <div style={{ padding:"10px 0 5px", display:"flex", flexDirection:"column", alignItems:"center", cursor:"pointer", flexShrink:0 }} onClick={()=>sh===1?setSh(2):closeSheet()}>
-            <div style={{ width:36, height:4, borderRadius:2, background:"#e2e8f0" }}/>
-            <span style={{ fontSize:8, color:"#94a3b8", marginTop:2 }}>{sh===1?"↑ Full analysis":"↓ Close"}</span>
+          <div style={{ padding: "10px 0 5px", display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", flexShrink: 0 }} onClick={() => sh === 1 ? setSh(2) : closeSheet()}>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: "#e2e8f0" }} />
+            <span style={{ fontSize: 8, color: "#94a3b8", marginTop: 2 }}>{sh === 1 ? "↑ Full analysis" : "↓ Close"}</span>
           </div>
 
-          <div style={{ padding:"0 16px 20px", overflowY:"auto", flex:1 }}>
+          <div style={{ padding: "0 16px 20px", overflowY: "auto", flex: 1 }}>
             {/* Header: county name + mini gauge + risk badge */}
-            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14, paddingBottom:12, borderBottom:`1px solid ${lPal.border}` }}>
-              <div style={{ flex:1 }}>
-                <h2 style={{ margin:0, fontSize:20, fontWeight:900, color:"#0f172a" }}>{sel} County</h2>
-                <div style={{ fontSize:10, color:"#94a3b8", marginTop:2 }}>California · Central Valley</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, paddingBottom: 12, borderBottom: `1px solid ${lPal.border}` }}>
+              <div style={{ flex: 1 }}>
+                <h2 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: "#0f172a" }}>{sel} County</h2>
+                <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 2 }}>California · Central Valley</div>
               </div>
-              <MiniGauge riskScore={currentRiskScore} riskLevel={currentRisk} size={70}/>
-              {currentRisk && currentRisk!=="Unknown" && (
+              <MiniGauge riskScore={currentRiskScore} riskLevel={currentRisk} size={70} />
+              {currentRisk && currentRisk !== "Unknown" && (
                 <div style={{
-                  padding:"7px 12px", borderRadius:20, fontWeight:800, fontSize:11,
-                  background:lPal.pillBg, color:lPal.pillText,
-                  border:`1.5px solid ${lPal.border}`, flexShrink:0, textAlign:"center",
+                  padding: "7px 12px", borderRadius: 20, fontWeight: 800, fontSize: 11,
+                  background: lPal.pillBg, color: lPal.pillText,
+                  border: `1.5px solid ${lPal.border}`, flexShrink: 0, textAlign: "center",
                 }}>
-                  {currentRisk==="Very High"&&"⚠️ "}{currentRisk}<br/>
-                  <span style={{ fontSize:9, fontWeight:500, opacity:0.7 }}>Risk</span>
+                  {currentRisk === "Very High" && "⚠️ "}{currentRisk}<br />
+                  <span style={{ fontSize: 9, fontWeight: 500, opacity: 0.7 }}>Risk</span>
                 </div>
               )}
             </div>
 
             {/* Stat cards — shown first for immediate visibility */}
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:7, marginBottom:14 }}>
-              <StatCard label="Wind"        value={env?.wind_speed_kmh!=null?`${env.wind_speed_kmh.toFixed(0)} km/h`:null}  warn={env?.wind_speed_kmh>15}   sub="dispersal: >15 km/h"/>
-              <StatCard label="PM10 Dust"   value={env?.pm10_ugm3!=null?`${env.pm10_ugm3.toFixed(0)} µg/m³`:null}           warn={env?.pm10_ugm3>35}         sub="high: >35 µg/m³"/>
-              <StatCard label="Temperature" value={env?.temperature_c!=null?`${env.temperature_c.toFixed(1)}°C`:null}        warn={env?.temperature_c>35}     sub="spore-active: 20–40°C"/>
-              <StatCard label="Precip (today)" value={(env?.precip_daily_mm??env?.precipitation_mm)!=null?`${(env?.precip_daily_mm??env?.precipitation_mm).toFixed(1)} mm`:null} warn={(env?.precip_daily_mm??env?.precipitation_mm)===0} sub="0 mm = dry soil risk"/>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 14 }}>
+              <StatCard label="Wind" value={env?.wind_speed_kmh != null ? `${env.wind_speed_kmh.toFixed(0)} km/h` : null} warn={env?.wind_speed_kmh > 15} sub="dispersal: >15 km/h" />
+              <StatCard label="PM10 Dust" value={env?.pm10_ugm3 != null ? `${env.pm10_ugm3.toFixed(0)} µg/m³` : null} warn={env?.pm10_ugm3 > 35} sub="high: >35 µg/m³" />
+              <StatCard label="Temperature" value={env?.temperature_c != null ? `${env.temperature_c.toFixed(1)}°C` : null} warn={env?.temperature_c > 35} sub="spore-active: 20–40°C" />
+              <StatCard label="Precip (7 days)" value={env?.precip_week_mm != null ? `${env.precip_week_mm.toFixed(1)} mm` : null} warn={env?.precip_week_mm === 0} sub="0 mm = dry soil risk" />
             </div>
 
             {/* AI Risk Summary */}
-            <div style={{ background:lPal.summaryBg, borderRadius:10, padding:"11px 13px", marginBottom:12, border:`1px solid ${lPal.summaryBorder}` }}>
-              <div style={{ fontSize:9, color:lPal.accent, fontWeight:700, letterSpacing:0.5, marginBottom:5 }}>
-                {currentRisk==="Very High"?"⚠️ CRITICAL RISK ALERT":"✨ AI Risk Summary"}
+            <div style={{ background: lPal.summaryBg, borderRadius: 10, padding: "11px 13px", marginBottom: 12, border: `1px solid ${lPal.summaryBorder}` }}>
+              <div style={{ fontSize: 9, color: lPal.accent, fontWeight: 700, letterSpacing: 0.5, marginBottom: 5 }}>
+                {currentRisk === "Very High" ? "⚠️ CRITICAL RISK ALERT" : "✨ AI Risk Summary"}
               </div>
-              {summaryBullets.length>0 ? (
-                <ul style={{ margin:0, paddingLeft:14 }}>
-                  {summaryBullets.map((b,i)=><li key={i} style={{ fontSize:11, color:lPal.summaryText, lineHeight:1.55, marginBottom:2 }}>{b}</li>)}
+              {summaryBullets.length > 0 ? (
+                <ul style={{ margin: 0, paddingLeft: 14 }}>
+                  {summaryBullets.map((b, i) => <li key={i} style={{ fontSize: 11, color: lPal.summaryText, lineHeight: 1.55, marginBottom: 2 }}>{b}</li>)}
                 </ul>
-              ) : <p style={{ margin:0, fontSize:11, color:"#94a3b8" }}>Loading AI analysis…</p>}
+              ) : <p style={{ margin: 0, fontSize: 11, color: "#94a3b8" }}>Loading AI analysis…</p>}
             </div>
 
             {/* Clinics for this county */}
-            {mapMode==="clinics" && clinicsData.filter(c=>c.county===sel).length>0 && (
-              <div style={{ marginBottom:14 }}>
-                <div style={{ fontSize:9, color:"#94a3b8", fontWeight:700, letterSpacing:0.5, marginBottom:6 }}>NEARBY MEDICAL FACILITIES</div>
-                {clinicsData.filter(c=>c.county===sel).map((c,i)=>(
-                  <div key={i} style={{ background:"#f8fafc", border:"1px solid #e2e8f0", borderRadius:9, padding:"9px 11px", marginBottom:6 }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                      <div style={{ flex:1 }}>
-                        <div style={{ fontSize:11, fontWeight:700, color:"#1e293b", marginBottom:2 }}>{c.name}</div>
-                        <div style={{ fontSize:9, color:"#94a3b8" }}>{c.address}</div>
+            {mapMode === "clinics" && clinicsData.filter(c => c.county === sel).length > 0 && (
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 9, color: "#94a3b8", fontWeight: 700, letterSpacing: 0.5, marginBottom: 6 }}>NEARBY MEDICAL FACILITIES</div>
+                {clinicsData.filter(c => c.county === sel).map((c, i) => (
+                  <div key={i} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 9, padding: "9px 11px", marginBottom: 6 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "#1e293b", marginBottom: 2 }}>{c.name}</div>
+                        <div style={{ fontSize: 9, color: "#94a3b8" }}>{c.address}</div>
                       </div>
-                      <div style={{ fontSize:8, padding:"2px 7px", borderRadius:10, background:`${CLINIC_COLORS[c.type]||"#2563eb"}15`, color:CLINIC_COLORS[c.type]||"#2563eb", border:`1px solid ${CLINIC_COLORS[c.type]||"#2563eb"}30`, marginLeft:8, flexShrink:0 }}>{c.type}</div>
+                      <div style={{ fontSize: 8, padding: "2px 7px", borderRadius: 10, background: `${CLINIC_COLORS[c.type] || "#2563eb"}15`, color: CLINIC_COLORS[c.type] || "#2563eb", border: `1px solid ${CLINIC_COLORS[c.type] || "#2563eb"}30`, marginLeft: 8, flexShrink: 0 }}>{c.type}</div>
                     </div>
-                    {c.note && <div style={{ fontSize:9, color:lPal.accent, marginTop:3 }}>✓ {c.note}</div>}
-                    {c.phone && <div style={{ fontSize:9, color:"#94a3b8", marginTop:2 }}>📞 {c.phone}</div>}
+                    {c.note && <div style={{ fontSize: 9, color: lPal.accent, marginTop: 3 }}>✓ {c.note}</div>}
+                    {c.phone && <div style={{ fontSize: 9, color: "#94a3b8", marginTop: 2 }}>📞 {c.phone}</div>}
                     {c.address && (
                       <a
                         href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(c.address)}`}
                         target="_blank" rel="noopener noreferrer"
-                        style={{ display:"inline-flex", alignItems:"center", gap:4, marginTop:6, fontSize:9, fontWeight:700, color:"#2563eb", textDecoration:"none", background:"#eff6ff", border:"1px solid #bfdbfe", borderRadius:6, padding:"3px 8px" }}
+                        style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 6, fontSize: 9, fontWeight: 700, color: "#2563eb", textDecoration: "none", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 6, padding: "3px 8px" }}
                       >
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11" /></svg>
                         Get Directions
                       </a>
                     )}
@@ -1044,88 +1044,88 @@ export default function App() {
             )}
 
             {/* Advice */}
-            {adviceBullets.length>0 && currentRiskScore>=2 && (
-              <div style={{ background:lPal.accentLight, borderRadius:10, padding:"11px 13px", marginBottom:12, border:`1px solid ${lPal.border}` }}>
-                <div style={{ fontSize:9, color:lPal.accent, fontWeight:700, letterSpacing:0.5, marginBottom:6 }}>
-                  {currentRisk==="Very High"?"🚨 IMMEDIATE ACTIONS REQUIRED":"✓ RECOMMENDED ACTIONS"}
+            {adviceBullets.length > 0 && currentRiskScore >= 2 && (
+              <div style={{ background: lPal.accentLight, borderRadius: 10, padding: "11px 13px", marginBottom: 12, border: `1px solid ${lPal.border}` }}>
+                <div style={{ fontSize: 9, color: lPal.accent, fontWeight: 700, letterSpacing: 0.5, marginBottom: 6 }}>
+                  {currentRisk === "Very High" ? "🚨 IMMEDIATE ACTIONS REQUIRED" : "✓ RECOMMENDED ACTIONS"}
                 </div>
-                {adviceBullets.map((a,i)=>(
-                  <div key={i} style={{ display:"flex", gap:6, marginBottom:4, alignItems:"flex-start" }}>
-                    <span style={{ fontSize:10, flexShrink:0, color:lPal.accent }}>●</span>
-                    <span style={{ fontSize:11, color:lPal.summaryText, lineHeight:1.5 }}>{a}</span>
+                {adviceBullets.map((a, i) => (
+                  <div key={i} style={{ display: "flex", gap: 6, marginBottom: 4, alignItems: "flex-start" }}>
+                    <span style={{ fontSize: 10, flexShrink: 0, color: lPal.accent }}>●</span>
+                    <span style={{ fontSize: 11, color: lPal.summaryText, lineHeight: 1.5 }}>{a}</span>
                   </div>
                 ))}
               </div>
             )}
 
             {/* Community reports */}
-            {apiReports?.count>0 && (
-              <div style={{ background:"#fff8f8", borderRadius:10, padding:"9px 12px", marginBottom:12, border:"1px solid #fecaca" }}>
-                <div style={{ fontSize:9, color:"#dc2626", fontWeight:700, letterSpacing:0.5, marginBottom:4 }}>
-                  🌪️ {apiReports.count} Community Dust Report{apiReports.count>1?"s":""} · Last 24h
+            {apiReports?.count > 0 && (
+              <div style={{ background: "#fff8f8", borderRadius: 10, padding: "9px 12px", marginBottom: 12, border: "1px solid #fecaca" }}>
+                <div style={{ fontSize: 9, color: "#dc2626", fontWeight: 700, letterSpacing: 0.5, marginBottom: 4 }}>
+                  🌪️ {apiReports.count} Community Dust Report{apiReports.count > 1 ? "s" : ""} · Last 24h
                 </div>
-                {apiReports.reports.slice(0,3).map((r,i)=>(
-                  <div key={i} style={{ fontSize:10, color:"#7f1d1d", marginBottom:2 }}>{"⚠️".repeat(r.severity)} {r.description||"Dust storm reported"}</div>
+                {apiReports.reports.slice(0, 3).map((r, i) => (
+                  <div key={i} style={{ fontSize: 10, color: "#7f1d1d", marginBottom: 2 }}>{"⚠️".repeat(r.severity)} {r.description || "Dust storm reported"}</div>
                 ))}
               </div>
             )}
 
             {/* Expanded content */}
-            {sh===2 && (
+            {sh === 2 && (
               <>
                 {/* Two-Phase Risk Index */}
-                <div style={{ background:"#fff", borderRadius:12, padding:"14px 0", marginBottom:16, borderTop:"1px solid #f1f5f9" }}>
-                  <RiskIndexPanel detail={apiDetail} env={env} riskLevel={currentRisk||"Low"}/>
+                <div style={{ background: "#fff", borderRadius: 12, padding: "14px 0", marginBottom: 16, borderTop: "1px solid #f1f5f9" }}>
+                  <RiskIndexPanel detail={apiDetail} env={env} riskLevel={currentRisk || "Low"} />
                 </div>
 
                 {/* Charts like image 2 */}
-                {envData.length>0 && (
+                {envData.length > 0 && (
                   <>
-                    <div style={{ fontSize:9, color:"#94a3b8", fontWeight:700, letterSpacing:1, marginBottom:4 }}>ENVIRONMENTAL DATA</div>
-                    <div style={{ fontSize:14, fontWeight:800, color:"#1e293b", marginBottom:12 }}>{sel} — Climate & Air Trends</div>
+                    <div style={{ fontSize: 9, color: "#94a3b8", fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>ENVIRONMENTAL DATA</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: "#1e293b", marginBottom: 12 }}>{sel} — Climate & Air Trends</div>
 
                     {/* Chart 1: Precipitation & Risk Score */}
-                    <LightChart title={`${sel} — Precipitation & Risk Score`} sub="Monthly rainfall (mm) vs risk index" riskLevel={currentRisk||"Low"}>
-                      <ComposedChart data={envData} margin={{top:4,right:16,bottom:0,left:0}}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false}/>
-                        <XAxis dataKey="label" tick={{fontSize:6,fill:"#94a3b8"}} interval={3} angle={-30} textAnchor="end" height={32}/>
-                        <YAxis yAxisId="p" tick={{fontSize:7,fill:"#4ade80"}} width={28}/>
-                        <YAxis yAxisId="r" orientation="right" domain={[0,25]} tickFormatter={v=>v} tick={{fontSize:7,fill:"#c2573d"}} width={22}/>
-                        <Tooltip content={<LightTooltip/>}/>
-                        <Legend wrapperStyle={{fontSize:9,paddingTop:4}}/>
-                        <Line yAxisId="p" type="monotone" dataKey="precip_mm"  name="Precipitation (mm)" stroke="#4ade80" strokeWidth={1.8} dot={{r:1.5,fill:"#4ade80"}} connectNulls/>
-                        <Line yAxisId="r" type="monotone" dataKey="risk_score" name="Risk Score"          stroke="#c2573d" strokeWidth={1.8} dot={{r:1.5,fill:"#c2573d"}} connectNulls/>
+                    <LightChart title={`${sel} — Precipitation & Risk Score`} sub="Monthly rainfall (mm) vs risk index" riskLevel={currentRisk || "Low"}>
+                      <ComposedChart data={envData} margin={{ top: 4, right: 16, bottom: 0, left: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                        <XAxis dataKey="label" tick={{ fontSize: 6, fill: "#94a3b8" }} interval={3} angle={-30} textAnchor="end" height={32} />
+                        <YAxis yAxisId="p" tick={{ fontSize: 7, fill: "#4ade80" }} width={28} />
+                        <YAxis yAxisId="r" orientation="right" domain={[0, 25]} tickFormatter={v => v} tick={{ fontSize: 7, fill: "#c2573d" }} width={22} />
+                        <Tooltip content={<LightTooltip />} />
+                        <Legend wrapperStyle={{ fontSize: 9, paddingTop: 4 }} />
+                        <Line yAxisId="p" type="monotone" dataKey="precip_mm" name="Precipitation (mm)" stroke="#4ade80" strokeWidth={1.8} dot={{ r: 1.5, fill: "#4ade80" }} connectNulls />
+                        <Line yAxisId="r" type="monotone" dataKey="risk_score" name="Risk Score" stroke="#c2573d" strokeWidth={1.8} dot={{ r: 1.5, fill: "#c2573d" }} connectNulls />
                       </ComposedChart>
                     </LightChart>
 
                     {/* Chart 2: PM10, Soil Moisture & Wind */}
-                    <LightChart title={`${sel} — PM10, Soil Moisture & Wind`} sub="PM10 (µg/m³), Soil Moisture (m³/m³), Wind (km/h)" riskLevel={currentRisk||"Low"}>
-                      <ComposedChart data={envData} margin={{top:4,right:36,bottom:0,left:0}}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false}/>
-                        <XAxis dataKey="label" tick={{fontSize:6,fill:"#94a3b8"}} interval={3} angle={-30} textAnchor="end" height={32}/>
-                        <YAxis yAxisId="left"  tick={{fontSize:7,fill:"#60a5fa"}} width={30} label={{value:"PM10/Wind",angle:-90,position:"insideLeft",fontSize:6,fill:"#94a3b8",offset:8}}/>
-                        <YAxis yAxisId="right" orientation="right" tick={{fontSize:7,fill:"#d4a574"}} width={30} tickFormatter={v=>v.toFixed(2)} label={{value:"Soil Moist.",angle:90,position:"insideRight",fontSize:6,fill:"#94a3b8",offset:8}}/>
-                        <Tooltip content={<LightTooltip/>}/>
-                        <Legend wrapperStyle={{fontSize:9,paddingTop:4}}/>
-                        <Line yAxisId="left"  type="monotone" dataKey="pm10"         name="PM10 (µg/m³)"     stroke="#60a5fa" strokeWidth={1.8} dot={{r:1.5}} connectNulls/>
-                        <Line yAxisId="right" type="monotone" dataKey="soil_moisture" name="Soil Moisture"    stroke="#d4a574" strokeWidth={1.5} strokeDasharray="5 3" dot={false} connectNulls/>
-                        <Line yAxisId="left"  type="monotone" dataKey="wind_speed"   name="Wind (km/h)"      stroke="#94a3b8" strokeWidth={1.4} strokeDasharray="4 2" dot={false} connectNulls/>
+                    <LightChart title={`${sel} — PM10, Soil Moisture & Wind`} sub="PM10 (µg/m³), Soil Moisture (m³/m³), Wind (km/h)" riskLevel={currentRisk || "Low"}>
+                      <ComposedChart data={envData} margin={{ top: 4, right: 36, bottom: 0, left: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                        <XAxis dataKey="label" tick={{ fontSize: 6, fill: "#94a3b8" }} interval={3} angle={-30} textAnchor="end" height={32} />
+                        <YAxis yAxisId="left" tick={{ fontSize: 7, fill: "#60a5fa" }} width={30} label={{ value: "PM10/Wind", angle: -90, position: "insideLeft", fontSize: 6, fill: "#94a3b8", offset: 8 }} />
+                        <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 7, fill: "#d4a574" }} width={30} tickFormatter={v => v.toFixed(2)} label={{ value: "Soil Moist.", angle: 90, position: "insideRight", fontSize: 6, fill: "#94a3b8", offset: 8 }} />
+                        <Tooltip content={<LightTooltip />} />
+                        <Legend wrapperStyle={{ fontSize: 9, paddingTop: 4 }} />
+                        <Line yAxisId="left" type="monotone" dataKey="pm10" name="PM10 (µg/m³)" stroke="#60a5fa" strokeWidth={1.8} dot={{ r: 1.5 }} connectNulls />
+                        <Line yAxisId="right" type="monotone" dataKey="soil_moisture" name="Soil Moisture" stroke="#d4a574" strokeWidth={1.5} strokeDasharray="5 3" dot={false} connectNulls />
+                        <Line yAxisId="left" type="monotone" dataKey="wind_speed" name="Wind (km/h)" stroke="#94a3b8" strokeWidth={1.4} strokeDasharray="4 2" dot={false} connectNulls />
                       </ComposedChart>
                     </LightChart>
 
                     {/* Chart 3: Historic risk vs cases */}
-                    {chartData.length>0 && (
-                      <LightChart title={`${sel} — Risk Index vs Recorded Cases`} sub="Predicted risk (0–100 Sporisk score) and confirmed Valley Fever cases" riskLevel={currentRisk||"Low"}>
-                        <ComposedChart data={chartData} margin={{top:4,right:16,bottom:0,left:0}}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false}/>
-                          <XAxis dataKey="d" tick={{fontSize:6,fill:"#94a3b8"}} interval={3} angle={-30} textAnchor="end" height={32}/>
-                          <YAxis yAxisId="risk" domain={[0,25]} tickFormatter={v=>v} tick={{fontSize:7,fill:"#7c3aed"}} width={22}/>
-                          <YAxis yAxisId="cases" orientation="right" tick={{fontSize:7,fill:"#60a5fa"}} width={30}/>
-                          <Tooltip content={<RiskTooltip/>}/>
-                          <Legend wrapperStyle={{fontSize:9,paddingTop:4}}/>
-                          {cutLabel && <ReferenceLine yAxisId="risk" x={cutLabel} stroke="#dc2626" strokeWidth={1} strokeDasharray="5 3" label={{value:"← Actual | Forecast →",position:"insideTopRight",fontSize:6,fill:"#dc2626"}}/>}
-                          <Bar    yAxisId="cases" dataKey="actual"    name="Recorded Cases" fill="#60a5fa33" stroke="#60a5fa" strokeWidth={0.5} barSize={5}/>
-                          <Line  yAxisId="risk"  dataKey="riskScore" name="Risk Score"      stroke="#7c3aed" strokeWidth={2} dot={false} isAnimationActive={false} connectNulls={false}/>
+                    {chartData.length > 0 && (
+                      <LightChart title={`${sel} — Risk Index vs Recorded Cases`} sub="Predicted risk (0–100 Sporisk score) and confirmed Valley Fever cases" riskLevel={currentRisk || "Low"}>
+                        <ComposedChart data={chartData} margin={{ top: 4, right: 16, bottom: 0, left: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                          <XAxis dataKey="d" tick={{ fontSize: 6, fill: "#94a3b8" }} interval={3} angle={-30} textAnchor="end" height={32} />
+                          <YAxis yAxisId="risk" domain={[0, 25]} tickFormatter={v => v} tick={{ fontSize: 7, fill: "#7c3aed" }} width={22} />
+                          <YAxis yAxisId="cases" orientation="right" tick={{ fontSize: 7, fill: "#60a5fa" }} width={30} />
+                          <Tooltip content={<RiskTooltip />} />
+                          <Legend wrapperStyle={{ fontSize: 9, paddingTop: 4 }} />
+                          {cutLabel && <ReferenceLine yAxisId="risk" x={cutLabel} stroke="#dc2626" strokeWidth={1} strokeDasharray="5 3" label={{ value: "← Actual | Forecast →", position: "insideTopRight", fontSize: 6, fill: "#dc2626" }} />}
+                          <Bar yAxisId="cases" dataKey="actual" name="Recorded Cases" fill="#60a5fa33" stroke="#60a5fa" strokeWidth={0.5} barSize={5} />
+                          <Line yAxisId="risk" dataKey="riskScore" name="Risk Score" stroke="#7c3aed" strokeWidth={2} dot={false} isAnimationActive={false} connectNulls={false} />
                         </ComposedChart>
                       </LightChart>
                     )}
@@ -1133,85 +1133,85 @@ export default function App() {
                 )}
 
                 {/* AI Insights */}
-                {insightBullets.length>0 && (
-                  <div style={{ marginBottom:14 }}>
-                    <div style={{ fontSize:9, color:"#94a3b8", fontWeight:700, letterSpacing:1, marginBottom:4 }}>GEMINI AI · INSIGHTS</div>
-                    <div style={{ fontSize:14, fontWeight:800, color:"#1e293b", marginBottom:8 }}>Pattern Analysis · {sel}</div>
-                    <div style={{ background:lPal.summaryBg, borderRadius:10, padding:"11px 13px", border:`1px solid ${lPal.summaryBorder}` }}>
-                      <ul style={{ margin:0, paddingLeft:14 }}>
-                        {insightBullets.map((b,i)=><li key={i} style={{ fontSize:11, color:lPal.summaryText, lineHeight:1.6, marginBottom:3 }}>{b}</li>)}
+                {insightBullets.length > 0 && (
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ fontSize: 9, color: "#94a3b8", fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>GEMINI AI · INSIGHTS</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: "#1e293b", marginBottom: 8 }}>Pattern Analysis · {sel}</div>
+                    <div style={{ background: lPal.summaryBg, borderRadius: 10, padding: "11px 13px", border: `1px solid ${lPal.summaryBorder}` }}>
+                      <ul style={{ margin: 0, paddingLeft: 14 }}>
+                        {insightBullets.map((b, i) => <li key={i} style={{ fontSize: 11, color: lPal.summaryText, lineHeight: 1.6, marginBottom: 3 }}>{b}</li>)}
                       </ul>
                     </div>
                   </div>
                 )}
 
-                <div style={{ height: NAV_H+8 }}/>
+                <div style={{ height: NAV_H + 8 }} />
               </>
             )}
           </div>
         </div>
       )}
 
-    {/* Chat overlay */}
-    {co && (
-      <div style={{ position:"fixed", bottom:NAV_H, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, height:"70vh", background:"#fff", borderRadius:"16px 16px 0 0", boxShadow:"0 -4px 24px rgba(0,0,0,0.1)", zIndex:5000, display:"flex", flexDirection:"column", border:"1px solid #e2e8f0" }}>
-          <div style={{ padding:"12px 16px 8px", display:"flex", justifyContent:"space-between", alignItems:"center", borderBottom:"1px solid #f1f5f9" }}>
-            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+      {/* Chat overlay */}
+      {co && (
+        <div style={{ position: "fixed", bottom: NAV_H, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, height: "70vh", background: "#fff", borderRadius: "16px 16px 0 0", boxShadow: "0 -4px 24px rgba(0,0,0,0.1)", zIndex: 5000, display: "flex", flexDirection: "column", border: "1px solid #e2e8f0" }}>
+          <div style={{ padding: "12px 16px 8px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span>🍄</span>
-              <span style={{ fontWeight:800, fontSize:14, color:"#1e293b" }}>SporeRisk AI</span>
-              {sel && <span style={{ fontSize:9, color:"#64748b", background:"#f1f5f9", padding:"2px 6px", borderRadius:8 }}>{sel}</span>}
+              <span style={{ fontWeight: 800, fontSize: 14, color: "#1e293b" }}>SporeRisk AI</span>
+              {sel && <span style={{ fontSize: 9, color: "#64748b", background: "#f1f5f9", padding: "2px 6px", borderRadius: 8 }}>{sel}</span>}
             </div>
-            <button onClick={()=>setCo(false)} style={{ background:"none", border:"none", fontSize:18, cursor:"pointer", color:"#94a3b8" }}>✕</button>
+            <button onClick={() => setCo(false)} style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#94a3b8" }}>✕</button>
           </div>
-          <div style={{ flex:1, overflowY:"auto", padding:"0 12px 8px" }}>
-            {msgs.map((m,i)=>(
-              <div key={i} style={{ display:"flex", justifyContent:m.r==="u"?"flex-end":"flex-start", marginBottom:8, marginTop:8 }}>
-                <div className={m.r==="b"?"chat-msg-bot":"chat-msg-user"} style={{ maxWidth:"82%", padding:"8px 12px", fontSize:12, lineHeight:1.5 }}>{m.t}</div>
+          <div style={{ flex: 1, overflowY: "auto", padding: "0 12px 8px" }}>
+            {msgs.map((m, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: m.r === "u" ? "flex-end" : "flex-start", marginBottom: 8, marginTop: 8 }}>
+                <div className={m.r === "b" ? "chat-msg-bot" : "chat-msg-user"} style={{ maxWidth: "82%", padding: "8px 12px", fontSize: 12, lineHeight: 1.5 }}>{m.t}</div>
               </div>
             ))}
-            {cb && <div style={{ display:"flex", gap:4, padding:"4px 0" }}>{[0,1,2].map(i=><div key={i} style={{ width:6,height:6,borderRadius:3,background:"#e2e8f0",animation:`bounce 1s ${i*0.15}s infinite` }}/>)}</div>}
-            <div ref={ce}/>
+            {cb && <div style={{ display: "flex", gap: 4, padding: "4px 0" }}>{[0, 1, 2].map(i => <div key={i} style={{ width: 6, height: 6, borderRadius: 3, background: "#e2e8f0", animation: `bounce 1s ${i * 0.15}s infinite` }} />)}</div>}
+            <div ref={ce} />
           </div>
-          <div style={{ padding:"8px 12px 16px", borderTop:"1px solid #f1f5f9", display:"flex", gap:8 }}>
-            <input value={ci} onChange={e=>setCi(e.target.value)} onKeyDown={e=>e.key==="Enter"&&send()} placeholder={sel?`Ask about ${sel} County…`:"Ask about Valley Fever…"} style={{ flex:1, border:"1px solid #e2e8f0", borderRadius:20, padding:"8px 14px", fontSize:13, outline:"none", background:"#f8fafc", color:"#1e293b" }} disabled={cb}/>
-            <button onClick={send} disabled={cb||!ci.trim()} style={{ background:"#6366f1", border:"none", borderRadius:20, padding:"8px 16px", color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer", opacity:cb||!ci.trim()?0.5:1 }}>↑</button>
+          <div style={{ padding: "8px 12px 16px", borderTop: "1px solid #f1f5f9", display: "flex", gap: 8 }}>
+            <input value={ci} onChange={e => setCi(e.target.value)} onKeyDown={e => e.key === "Enter" && send()} placeholder={sel ? `Ask about ${sel} County…` : "Ask about Valley Fever…"} style={{ flex: 1, border: "1px solid #e2e8f0", borderRadius: 20, padding: "8px 14px", fontSize: 13, outline: "none", background: "#f8fafc", color: "#1e293b" }} disabled={cb} />
+            <button onClick={send} disabled={cb || !ci.trim()} style={{ background: "#6366f1", border: "none", borderRadius: 20, padding: "8px 16px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", opacity: cb || !ci.trim() ? 0.5 : 1 }}>↑</button>
           </div>
-      </div>
-    )}
+        </div>
+      )}
 
-    {/* Bottom Navbar — floating pill, rendered outside overflow:hidden root */}
-    <nav style={{
-      position:"fixed", bottom:16, left:"50%", transform:"translateX(-50%)",
-      width:"calc(100% - 48px)", maxWidth:380, height:64,
-      background:"rgba(255,255,255,0.97)", backdropFilter:"blur(16px)",
-      borderRadius:32,
-      boxShadow:"0 4px 28px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.06)",
-      border:"1px solid rgba(226,232,240,0.8)",
-      display:"flex", alignItems:"center", justifyContent:"space-around",
-      zIndex:9999,
-    }}>
-      <button onClick={()=>setShowSms(true)} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:3, background:"none", border:"none", cursor:"pointer", padding:"8px 20px" }}>
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        <span style={{ fontSize:9, fontWeight:600, color:"#94a3b8" }}>Alerts</span>
-      </button>
-      <button onClick={()=>{setCo(c=>!c);if(sh>0)setSh(0);}} style={{
-        display:"flex", flexDirection:"column", alignItems:"center", gap:3,
-        background:co?lPal.pillBg:"transparent",
-        border:`1.5px solid ${co?lPal.accent:"transparent"}`,
-        borderRadius:20, cursor:"pointer", padding:"8px 22px",
-        transition:"all 0.2s",
+      {/* Bottom Navbar — floating pill, rendered outside overflow:hidden root */}
+      <nav style={{
+        position: "fixed", bottom: 16, left: "50%", transform: "translateX(-50%)",
+        width: "calc(100% - 48px)", maxWidth: 380, height: 64,
+        background: "rgba(255,255,255,0.97)", backdropFilter: "blur(16px)",
+        borderRadius: 32,
+        boxShadow: "0 4px 28px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.06)",
+        border: "1px solid rgba(226,232,240,0.8)",
+        display: "flex", alignItems: "center", justifyContent: "space-around",
+        zIndex: 9999,
       }}>
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={co?lPal.accent:"#94a3b8"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        <span style={{ fontSize:9, fontWeight:700, color:co?lPal.accent:"#94a3b8" }}>Chat</span>
-      </button>
-      <button onClick={()=>setShowReport(true)} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:3, background:"none", border:"none", cursor:"pointer", padding:"8px 20px" }}>
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg>
-        <span style={{ fontSize:9, fontWeight:600, color:"#94a3b8" }}>Report</span>
-      </button>
-    </nav>
+        <button onClick={() => setShowSms(true)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, background: "none", border: "none", cursor: "pointer", padding: "8px 20px" }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
+          <span style={{ fontSize: 9, fontWeight: 600, color: "#94a3b8" }}>Alerts</span>
+        </button>
+        <button onClick={() => { setCo(c => !c); if (sh > 0) setSh(0); }} style={{
+          display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+          background: co ? lPal.pillBg : "transparent",
+          border: `1.5px solid ${co ? lPal.accent : "transparent"}`,
+          borderRadius: 20, cursor: "pointer", padding: "8px 22px",
+          transition: "all 0.2s",
+        }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={co ? lPal.accent : "#94a3b8"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+          <span style={{ fontSize: 9, fontWeight: 700, color: co ? lPal.accent : "#94a3b8" }}>Chat</span>
+        </button>
+        <button onClick={() => setShowReport(true)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, background: "none", border: "none", cursor: "pointer", padding: "8px 20px" }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2" /><path d="M9.6 4.6A2 2 0 1 1 11 8H2" /><path d="M12.6 19.4A2 2 0 1 0 14 16H2" /></svg>
+          <span style={{ fontSize: 9, fontWeight: 600, color: "#94a3b8" }}>Report</span>
+        </button>
+      </nav>
 
-    {showReport && <ReportModal county={sel||"Kern"} onClose={()=>setShowReport(false)}/>}
-    {showSms    && <SmsModal    county={sel||geoData?.detected_county||"Kern"} onClose={()=>setShowSms(false)}/>}
+      {showReport && <ReportModal county={sel || "Kern"} onClose={() => setShowReport(false)} />}
+      {showSms && <SmsModal county={sel || geoData?.detected_county || "Kern"} onClose={() => setShowSms(false)} />}
     </>
   );
 }

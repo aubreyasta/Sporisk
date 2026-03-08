@@ -243,7 +243,7 @@ def get_environmental_stats(county: str) -> dict:
             "current": ["temperature_2m", "wind_speed_10m", "precipitation"],
             "daily": ["temperature_2m_max", "precipitation_sum", "wind_speed_10m_max"],
             "timezone": "America/Los_Angeles",
-            "forecast_days": 1,
+            "forecast_days": 7,
         }
         wr = requests.get(weather_url, params=weather_params, timeout=10).json()
 
@@ -268,6 +268,7 @@ def get_environmental_stats(county: str) -> dict:
             "temp_max_c": daily.get("temperature_2m_max", [None])[0],
             "wind_max_kmh": daily.get("wind_speed_10m_max", [None])[0],
             "precip_daily_mm": daily.get("precipitation_sum", [None])[0],
+            "precip_week_mm": round(sum(x for x in daily.get("precipitation_sum", []) if x is not None), 1),
             "pm10_ugm3": pm10,
             "source": "open-meteo (live)",
             "timestamp": current.get("time"),
@@ -292,22 +293,48 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
 
 def get_gemini_client(with_search=False):
-    """Initialize Gemini client. Returns None if no API key."""
+    """
+    Initialize Gemini client using the new google-genai SDK (google-generativeai is deprecated).
+    Returns a callable (prompt str → response str) or None if unavailable.
+    """
     if not GEMINI_API_KEY:
         return None
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=GEMINI_API_KEY)
+        from google import genai as google_genai
+        from google.genai import types as genai_types
 
-        if with_search:
-            # Enable Google Search grounding for real-time local data
-            from google.generativeai.types import Tool
-            google_search = Tool(google_search={})
-            return genai.GenerativeModel(
-                "gemini-2.0-flash",
-                tools=[google_search],
-            )
-        return genai.GenerativeModel("gemini-2.0-flash")
+        client = google_genai.Client(api_key=GEMINI_API_KEY)
+
+        def call(prompt: str) -> str:
+            """Send a prompt, return text. Handles search grounding transparently."""
+            config_kwargs = {}
+            if with_search:
+                config_kwargs["tools"] = [genai_types.Tool(
+                    google_search=genai_types.GoogleSearch()
+                )]
+            cfg = genai_types.GenerateContentConfig(**config_kwargs) if config_kwargs else None
+            kwargs = {"model": "gemini-2.0-flash", "contents": prompt}
+            if cfg:
+                kwargs["config"] = cfg
+            resp = client.models.generate_content(**kwargs)
+            return resp.text
+
+        # Attach client ref so callers can inspect grounding metadata if needed
+        call._client = client
+        return call
+
+    except ImportError:
+        # Fall back to old SDK if new one not installed
+        try:
+            import google.generativeai as genai_old
+            genai_old.configure(api_key=GEMINI_API_KEY)
+            model = genai_old.GenerativeModel("gemini-2.0-flash")
+            def call_old(prompt: str) -> str:
+                return model.generate_content(prompt).text
+            return call_old
+        except Exception as e2:
+            print(f"Gemini init error (fallback): {e2}")
+            return None
     except Exception as e:
         print(f"Gemini init error: {e}")
         return None
@@ -370,8 +397,7 @@ No markdown. Example format:
 {{"bullets": ["Soil is critically dry...", "PM10 levels are elevated...", "Growth potential of 0.44 means last season's rain fed significant fungal biomass..."], "advice": ["Wear N95 mask outdoors", "Avoid agricultural areas today"]}}
 """
         try:
-            response = model.generate_content(prompt)
-            text = response.text.strip().replace("```json", "").replace("```", "").strip()
+            text = model(prompt).strip().replace("```json", "").replace("```", "").strip()
             parsed = json.loads(text)
             if isinstance(parsed, dict) and "bullets" in parsed:
                 return parsed
@@ -777,8 +803,7 @@ Example of good insight: "Kern has been running 42% below average precipitation 
 Respond ONLY with a JSON array of strings. No markdown.
 """
         try:
-            response = model.generate_content(prompt)
-            text = response.text.strip().replace("```json", "").replace("```", "").strip()
+            text = model(prompt).strip().replace("```json", "").replace("```", "").strip()
             insights = json.loads(text)
             return {
                 "county": county_name,
@@ -1156,30 +1181,16 @@ GUIDELINES:
 Keep responses under 200 words. Be direct and helpful."""
 
     try:
-        response = model.generate_content(
-            f"{system_prompt}\n\nUser question: {req.message}"
-        )
+        reply_text = model(f"{system_prompt}\n\nUser question: {req.message}")
 
-        # Extract sources from grounding metadata if available
         sources = ["SporeRisk prediction model"]
         if needs_search:
             sources.append("Google Search (live healthcare data)")
-            # Try to extract grounding sources
-            try:
-                if hasattr(response, 'candidates') and response.candidates:
-                    candidate = response.candidates[0]
-                    grounding = getattr(candidate, 'grounding_metadata', None)
-                    if grounding and hasattr(grounding, 'grounding_chunks'):
-                        for chunk in grounding.grounding_chunks:
-                            if hasattr(chunk, 'web') and hasattr(chunk.web, 'uri'):
-                                sources.append(chunk.web.uri)
-            except Exception:
-                pass
         else:
             sources.append("Open-Meteo environmental data")
 
         return ChatResponse(
-            reply=response.text,
+            reply=reply_text,
             sources=sources,
         )
     except Exception as e:
