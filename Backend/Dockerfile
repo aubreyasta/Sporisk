@@ -1,4 +1,3 @@
-Set-Content Backend/Dockerfile @"
 FROM python:3.12-slim
 
 WORKDIR /app
@@ -11,4 +10,3 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 CMD ["sh", "-c", "gunicorn --bind=0.0.0.0:$PORT --reuse-port -k uvicorn.workers.UvicornWorker api:app"]
-"@
