@@ -291,13 +291,16 @@ def get_environmental_stats(county: str) -> dict:
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
+# ── Toggle this to False to disable all Gemini calls (e.g. when quota is exhausted) ──
+GEMINI_ENABLED = True
+
 
 def get_gemini_client(with_search=False):
     """
     Initialize Gemini client using the new google-genai SDK (google-generativeai is deprecated).
     Returns a callable (prompt str → response str) or None if unavailable.
     """
-    if not GEMINI_API_KEY:
+    if not GEMINI_ENABLED or not GEMINI_API_KEY:
         return None
     try:
         from google import genai as google_genai
