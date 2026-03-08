@@ -260,59 +260,78 @@ def save_predictions(monthly, y_pred, output_path="baseline_predictions.csv"):
 
     # ----------------------------------------------------------------
     # SPORISK BIOLOGICAL RISK INDEX  (Gpot × Erisk × 100)
-    # Replaces the old county-relative percentile bucketing (1–4).
-    # See: https://sporisk.vercel.app — Algorithm section
+    # Formula matches exactly: https://sporisk.vercel.app — Algorithm section
     #
-    # Normalization ranges derived from 2020-2026 Central Valley data.
+    # Normalization: MinMax using actual min/max observed in the monthly
+    # dataset (computed live below), so ranges adapt to the real data
+    # rather than hardcoded estimates. Matches data_collector.py approach.
     # ----------------------------------------------------------------
-    NORM_RANGES = {
-        "sm":     (0.03, 0.45),   # soil moisture m³/m³
-        "tmax":   (5.0,  45.0),   # °C
-        "precip": (0.0,  200.0),  # mm (monthly total)
-        "pm10":   (0.0,  150.0),  # µg/m³
-        "wind":   (0.0,  60.0),   # km/h
-    }
+
+    def _safe(series):
+        """Return (min, max) of a Series, ignoring NaN. Returns (0,1) if flat."""
+        lo, hi = series.min(), series.max()
+        return (lo, hi) if hi > lo else (0.0, 1.0)
+
+    # Compute normalization ranges from the actual monthly data
+    sm_range     = _safe(monthly["soil_moisture_m3m3"])
+    tmax_range   = _safe(monthly["tmax_approx_c"])
+    precip_range = _safe(monthly["precip_mm"])
+    pm10_range   = _safe(monthly["pm10_ugm3"])
+    wind_range   = _safe(monthly["wind_speed_kmh"])
+
+    # Lag-feature ranges (same physical variable, potentially different range)
+    sm6_range    = _safe(monthly["sm_lag6"].dropna())
+    tmax6_range  = _safe(monthly["tmax_lag6"].dropna())
+    p18_range    = _safe(monthly["precip_lag18"].dropna())
+    pm10l_range  = _safe(monthly["pm10_lag1"].dropna())
+    tmax1_range  = _safe(monthly["tmax_lag1"].dropna())
+    wind3_range  = _safe(monthly["wind_roll3"].dropna())
+
+    print(f"\n  Normalization ranges (from actual data):")
+    print(f"    sm_lag6:     {sm6_range[0]:.3f} – {sm6_range[1]:.3f} m³/m³")
+    print(f"    tmax_lag6:   {tmax6_range[0]:.1f} – {tmax6_range[1]:.1f} °C")
+    print(f"    precip_lag18:{p18_range[0]:.1f} – {p18_range[1]:.1f} mm")
+    print(f"    pm10_lag1:   {pm10l_range[0]:.1f} – {pm10l_range[1]:.1f} µg/m³")
+    print(f"    wind_roll3:  {wind3_range[0]:.1f} – {wind3_range[1]:.1f} km/h")
+    print(f"    sm_now:      {sm_range[0]:.3f} – {sm_range[1]:.3f} m³/m³")
+    print(f"    tmax_lag1:   {tmax1_range[0]:.1f} – {tmax1_range[1]:.1f} °C")
 
     def _norm(val, lo, hi):
-        """Clamp-normalize a value to [0, 1]. NaN → 0.5 (midpoint impute)."""
+        """MinMax normalize to [0,1]. NaN/None → 0.5 (midpoint impute)."""
         if val is None or (isinstance(val, float) and np.isnan(val)):
             return 0.5
         return max(0.0, min(1.0, (val - lo) / (hi - lo)))
 
     def compute_sporisk(row):
         """
-        Compute Gpot, Erisk, and the 0–100 risk score for one monthly row.
-        Uses lag columns already engineered by engineer_features().
+        Sporisk formula (sporisk.vercel.app):
+          Gpot  = 0.35×SM_lag6 + 0.20×T_lag6 + 0.30×P_lag18
+          Erisk = 0.25×PM10_lag1 + 0.15×(1−SM_now) + 0.05×Wind + 0.20×Tmax_lag1
+          Score = Gpot × Erisk × 100
+        All inputs normalized to [0,1] using actual data min/max.
         """
-        # --- Growth Potential (was the environment right to grow fungal biomass?) ---
-        sm6n  = _norm(row.get("sm_lag6"),     *NORM_RANGES["sm"])
-        t6n   = _norm(row.get("tmax_lag6"),   *NORM_RANGES["tmax"])
-        p18n  = _norm(row.get("precip_lag18"), *NORM_RANGES["precip"])
+        # ── Growth Potential ──
+        sm6n  = _norm(row.get("sm_lag6"),      *sm6_range)
+        t6n   = _norm(row.get("tmax_lag6"),    *tmax6_range)
+        p18n  = _norm(row.get("precip_lag18"), *p18_range)
 
         gpot = 0.35 * sm6n + 0.20 * t6n + 0.30 * p18n
-        # NOTE: weights sum to 0.85, not 1.0 — 0.15 reserved for future
-        # variables (e.g. soil pH, competing microbes). Matches theory page.
 
-        # --- Exposure/Dispersal Risk (are spores actually getting airborne?) ---
-        pm10n  = _norm(row.get("pm10_lag1"),        *NORM_RANGES["pm10"])
-        sm_now = _norm(row.get("soil_moisture_m3m3"), *NORM_RANGES["sm"])
-        windn  = _norm(row.get("wind_roll3"),        *NORM_RANGES["wind"])
-        tmaxn  = _norm(row.get("tmax_lag1"),         *NORM_RANGES["tmax"])
+        # ── Exposure Risk ──
+        pm10n   = _norm(row.get("pm10_lag1"),          *pm10l_range)
+        sm_now  = _norm(row.get("soil_moisture_m3m3"),  *sm_range)
+        windn   = _norm(row.get("wind_roll3"),          *wind3_range)
+        tmaxn   = _norm(row.get("tmax_lag1"),           *tmax1_range)
 
         erisk = 0.25 * pm10n + 0.15 * (1 - sm_now) + 0.05 * windn + 0.20 * tmaxn
 
         score = round(gpot * erisk * 100, 2)
 
-        # Tier thresholds calibrated to Kern historical table on theory page:
-        # normal years avg 8–12, 2024 record year peaked at 12+
-        if score < 3:
-            tier = "Low"
-        elif score < 8:
-            tier = "Moderate"
-        elif score < 15:
-            tier = "High"
-        else:
-            tier = "Very High"
+        # Fixed thresholds matching theory page (not quantile-relative)
+        if score < 3:    tier = "Low"
+        elif score < 8:  tier = "Moderate"
+        elif score < 15: tier = "High"
+        else:            tier = "Very High"
 
         return gpot, erisk, score, tier
 

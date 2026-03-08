@@ -322,61 +322,73 @@ def normalize(df):
 
 def compute_risk_index(df):
     """
-    Blueprint §7.1:
-      G_pot  = w1(SM_lag_6mo) + w2(T_lag_6mo) + w3(P_lag_1.5yr)
-      E_risk = w4(PM10_1mo) + w5(W_current) + w6(1-SM_current) + w7(T_max_1mo)
-      Risk   = G_pot × E_risk
-    
-    Weights from Research Table 3 (MNBR adjusted incidence rate ratios):
-      Soil moisture lag:  35% → β = 1.9
-      PM10 1mo:           25% → β = 1.6
-      Max temp:           20% → β = 1.9
-      Soil aridity:       15% → β = 1.3
-      Wind speed:          5% → β = 0.5
+    Sporisk two-phase formula — exactly as defined on sporisk.vercel.app:
+
+      Gpot  = 0.35×SM_lag6mo + 0.20×T_lag6mo + 0.30×P_lag1.5yr
+      Erisk = 0.25×PM10_1mo + 0.15×(1−SM_now) + 0.05×Wind + 0.20×Tmax_1mo
+      Risk  = Gpot × Erisk × 100   →  0–100 continuous scale
+
+    Weights are NORMALIZED fractions derived from MNBR aIRRs, NOT raw IRR
+    coefficients. Each weight represents the variable's relative share of
+    predictive importance within its phase, calibrated to sum to the phase
+    total used in the theory page.
+
+    Inputs must already be MinMax-normalized to [0,1] via the n_* columns
+    produced in normalize_features(). n_soil_aridity = 1 - n_soil_moisture.
+
+    Tier thresholds (fixed, not quantile-based) match the theory page sandbox:
+      <3   → Low        (baseline, dry-season off-peak)
+      3–8  → Moderate   (typical Central Valley summer)
+      8–15 → High       (active dispersal season)
+      ≥15  → Very High  (peak outbreak conditions, e.g. 2024 Kern)
     """
     print("\n" + "=" * 70)
-    print("  RISK INDEX: Two-phase formula (Blueprint §7.1)")
+    print("  RISK INDEX: Sporisk two-phase formula (sporisk.vercel.app)")
     print("=" * 70)
 
-    # ── Growth Potential (antecedent conditions) ──
-    # Uses normalized lag features (MinMax 0-1 range)
+    # ── Growth Potential — antecedent conditions for fungal biomass ──
+    # Were soil, heat, and rainfall right 6–18 months ago to grow Coccidioides?
     df["G_pot"] = (
-        1.9 * df["n_sm_lag6mo"].fillna(0) +
-        1.9 * df["n_tmax_lag6mo"].fillna(0) +
-        1.6 * df["n_precip_lag1p5y"].fillna(0)
+        0.35 * df["n_sm_lag6mo"].fillna(0) +       # soil moisture 6mo ago (#1 feature, sm_lag6 22.3%)
+        0.20 * df["n_tmax_lag6mo"].fillna(0) +      # max temp 6mo ago (growth-phase heat)
+        0.30 * df["n_precip_lag1p5y"].fillna(0)     # precip 1.5yr ago (drought/deluge cycle)
     )
+    # Weights sum to 0.85 — 0.15 reserved for future variables (soil pH, microbiome competition)
 
-    # ── Exposure Risk (current dispersal conditions) ──
+    # ── Exposure Risk — current dispersal conditions ──
+    # Are spores actually becoming airborne and reaching human lungs right now?
     df["E_risk"] = (
-        1.6 * df["n_pm10_lag1mo"].fillna(0) +
-        0.5 * df["n_wind_speed_kmh"].fillna(0) +
-        1.3 * df["n_soil_aridity"].fillna(0) +
-        1.9 * df["n_tmax_lag1mo"].fillna(0)
+        0.25 * df["n_pm10_lag1mo"].fillna(0) +      # PM10 1mo ago (arthroconidia ARE PM10)
+        0.15 * df["n_soil_aridity"].fillna(0) +     # 1−SM_now: dry topsoil → aerosolization
+        0.05 * df["n_wind_speed_kmh"].fillna(0) +   # wind (lowest aIRR — monthly avg misses gusts)
+        0.20 * df["n_tmax_lag1mo"].fillna(0)        # Tmax 1mo ago (maturation trigger >30°C)
     )
+    # Weights sum to 0.65
 
-    # ── Integrated Risk = G_pot × E_risk ──
-    # Multiplicative: high growth + no dispersal = zero human risk
-    df["risk_score"] = df["G_pot"] * df["E_risk"]
+    # ── Integrated Risk = Gpot × Erisk × 100 ──
+    # Multiplicative: growth without dispersal = 0 cases; dispersal without
+    # growth = nothing to disperse. Both phases must align for an outbreak.
+    df["risk_score"] = df["G_pot"] * df["E_risk"] * 100
 
-    # ── Categorize into risk levels ──
-    # Thresholds set so distribution roughly matches:
-    # ~40% Low, ~30% Moderate, ~20% High, ~10% Very High
-    risk_max = df["risk_score"].quantile(0.99)  # avoid outlier-driven thresholds
-    if risk_max > 0:
-        bins   = [0, risk_max * 0.25, risk_max * 0.50, risk_max * 0.75, float("inf")]
-        labels = ["Low", "Moderate", "High", "Very High"]
-        colors = {"Low": "green", "Moderate": "yellow", "High": "orange", "Very High": "red"}
-        df["risk_level"] = pd.cut(df["risk_score"], bins=bins, labels=labels, include_lowest=True)
-        df["risk_color"] = df["risk_level"].map(colors)
-    else:
-        df["risk_level"] = "Low"
-        df["risk_color"] = "green"
+    # ── Fixed tier thresholds (calibrated to Kern historical data) ──
+    # NOT quantile-based — thresholds are absolute so scores are comparable
+    # across counties and years, matching the theory page sandbox output.
+    def _tier(s):
+        if s < 3:   return "Low"
+        if s < 8:   return "Moderate"
+        if s < 15:  return "High"
+        return "Very High"
+
+    df["risk_level"] = df["risk_score"].apply(_tier)
+    df["risk_color"] = df["risk_level"].map({
+        "Low": "green", "Moderate": "yellow", "High": "orange", "Very High": "red"
+    })
 
     # Print summary
-    print(f"\n  G_pot  range: {df['G_pot'].min():.3f} – {df['G_pot'].max():.3f}")
-    print(f"  E_risk range: {df['E_risk'].min():.3f} – {df['E_risk'].max():.3f}")
-    print(f"  Risk   range: {df['risk_score'].min():.3f} – {df['risk_score'].max():.3f}")
-    print(f"\n  Risk level distribution:")
+    print(f"\n  G_pot  range: {df['G_pot'].min():.4f} – {df['G_pot'].max():.4f}  (expected 0–0.85)")
+    print(f"  E_risk range: {df['E_risk'].min():.4f} – {df['E_risk'].max():.4f}  (expected 0–0.65)")
+    print(f"  Risk   range: {df['risk_score'].min():.2f} – {df['risk_score'].max():.2f}  (0–100 scale)")
+    print(f"\n  Risk level distribution (fixed thresholds: <3 / 3-8 / 8-15 / ≥15):")
     for level in ["Low", "Moderate", "High", "Very High"]:
         n = (df["risk_level"] == level).sum()
         pct = n / len(df) * 100

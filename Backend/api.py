@@ -621,23 +621,38 @@ def get_forecast(county: str):
 
     baseline_forecast = []
     for _, row in future.iterrows():
+        raw_score = row.get("risk_score")
+        score = round(float(raw_score), 2) if raw_score is not None and not np.isnan(float(raw_score or 0)) else None
         baseline_forecast.append({
             "year": int(row["year"]),
             "month": int(row["month"]),
             "predicted_cases": round(float(row["predicted_cases"]), 1),
             "risk_level": row["predicted_risk"],
+            # Sporisk index: Gpot × Erisk × 100 (environmental formula)
+            "risk_score": score,
+            "gpot":  round(float(row["gpot"]),  4) if "gpot"  in row.index and not np.isnan(float(row.get("gpot")  or 0)) else None,
+            "erisk": round(float(row["erisk"]), 4) if "erisk" in row.index and not np.isnan(float(row.get("erisk") or 0)) else None,
+            "score_method": "gpot_erisk",   # full Sporisk formula
             "model": "random_forest",
         })
 
-    # TGCN predictions for this county
+    # TGCN predictions — risk_score here is case-percentile derived (NOT Gpot×Erisk)
+    # score_method field marks the distinction clearly
     tgcn_data = tgcn_df[tgcn_df["county"] == county_name].sort_values("test_sample")
     tgcn_forecast = []
     for _, row in tgcn_data.iterrows():
+        raw_score = row.get("risk_score")
+        score = round(float(raw_score), 2) if raw_score is not None and not np.isnan(float(raw_score or 0)) else None
         tgcn_forecast.append({
             "test_sample": int(row["test_sample"]),
             "actual_cases": round(float(row["actual_cases"]), 1),
             "predicted_cases": round(float(row["predicted_cases"]), 1),
             "residual": round(float(row["residual"]), 1),
+            # risk_score is case-count → percentile mapped to 0-100 scale
+            # so it can be shown on the same chart as baseline risk_score
+            "risk_score": score,
+            "risk_level": str(row["predicted_risk"]) if "predicted_risk" in row.index else None,
+            "score_method": str(row.get("score_method", "case_percentile")),
             "model": "tgcn",
         })
 
@@ -645,6 +660,10 @@ def get_forecast(county: str):
         "county": county_name,
         "baseline_forecast": baseline_forecast,
         "tgcn_forecast": tgcn_forecast,
+        "score_methods": {
+            "random_forest": "Gpot × Erisk × 100 (environmental formula, sporisk.vercel.app)",
+            "tgcn": "Case-count percentile mapped to 0-100 (T-GCN predicts cases, not environment)",
+        },
     }
 
 
