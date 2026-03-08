@@ -1,12 +1,14 @@
 /* SporeRisk App Styles */
 input[type=range] {
   -webkit-appearance: none;
+  appearance: none;
   width: 100%;
   height: 4px;
   border-radius: 2px;
   background: #e2e8f0;
   outline: none;
 }
+
 input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 16px;
@@ -14,8 +16,9 @@ input[type=range]::-webkit-slider-thumb {
   border-radius: 50%;
   background: #6366f1;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
+
 input[type=range]::-moz-range-thumb {
   width: 16px;
   height: 16px;
@@ -24,21 +27,179 @@ input[type=range]::-moz-range-thumb {
   cursor: pointer;
   border: none;
 }
-.chat-msg-bot  { background: #f1f5f9; color: #374151; border-radius: 12px 12px 12px 2px; }
-.chat-msg-user { background: #6366f1; color: #ffffff; border-radius: 12px 12px 2px 12px; }
+
+.chat-msg-bot {
+  background: #f1f5f9;
+  color: #374151;
+  border-radius: 12px 12px 12px 2px;
+}
+
+.chat-msg-user {
+  background: #6366f1;
+  color: #ffffff;
+  border-radius: 12px 12px 2px 12px;
+}
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes bounce {
-  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-  40%           { transform: scale(1);   opacity: 1; }
+
+  0%,
+  80%,
+  100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 @keyframes pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.4); }
-  50%       { box-shadow: 0 0 0 8px rgba(220,38,38,0); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 0 0 8px rgba(220, 38, 38, 0);
+  }
 }
 
+
+/* ── Map view animations ─────────────────────────────────────────── */
+@keyframes slideUp {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.92);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sheet-anim {
+  animation: slideUp 0.38s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+.fade-in {
+  animation: fadeIn 0.45s ease both;
+}
+
+.scale-in {
+  animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.count-up {
+  animation: countUp 0.5s ease both;
+}
+
+/* Hover lift for interactive cards */
+.hover-lift {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.10);
+}
+
+/* County pill hover in header */
+.county-badge {
+  transition: background 0.2s ease, color 0.2s ease;
+  cursor: default;
+}
+
+/* Map mode button transitions */
+.map-mode-btn {
+  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+}
+
+.map-mode-btn:hover {
+  transform: scale(1.04);
+}
+
+.map-mode-btn:active {
+  transform: scale(0.97);
+}
+
+/* Bottom sheet handle pulse hint (first open) */
+@keyframes handlePulse {
+
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.handle-hint {
+  animation: handlePulse 2s ease 1s 3;
+}
+
+/* Disclaimer banner slide-down */
+@keyframes bannerSlide {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.demo-banner {
+  animation: bannerSlide 0.4s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
