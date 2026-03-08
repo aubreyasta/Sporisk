@@ -18,7 +18,9 @@ async function apiFetch(path) {
 
 const TARGET_COUNTIES = ["Fresno","Kern","Kings","Madera","Merced","San Joaquin","Stanislaus","Tulare"];
 const RC       = { Low:"#22c55e", Moderate:"#d97706", High:"#dc2626", "Very High":"#b91c1c" };
-const RISK_SCORE = { Low:1, Moderate:2, High:3, "Very High":4 };
+// Tier labels for display (tier is still derived from continuous score)
+const RISK_LABEL_FROM_SCORE = s => s==null?"Unknown": s<3?"Low": s<8?"Moderate": s<15?"High":"Very High";
+// Legacy map kept for any chart tick formatters that still use integer keys
 const RISK_LABEL = { 1:"Low", 2:"Moderate", 3:"High", 4:"Very High" };
 
 // Dark palette — landing screen only
@@ -134,7 +136,7 @@ const CLINIC_COLORS = { hospital:"#ef4444", clinic:"#2563eb" };
 // ── CircularRiskGauge (landing screen) ──────────────────────────────────────
 function CircularRiskGauge({ riskScore, riskLevel, county, size=220 }) {
   const r=80, cx=100, cy=100, circ=2*Math.PI*r;
-  const pct = riskScore ? riskScore/4 : 0;
+  const pct = riskScore ? Math.min(1, riskScore/25) : 0;  // 0–100 score, cap arc at 25 for visual
   const offset = circ*(1-pct);
   const pal = getDarkPal(riskLevel);
   const color = RC[riskLevel] || "#22c55e";
@@ -164,7 +166,7 @@ function CircularRiskGauge({ riskScore, riskLevel, county, size=220 }) {
 // ── MiniGauge (bottom sheet) — light-context version ────────────────────────
 function MiniGauge({ riskScore, riskLevel, size=72 }) {
   const r=26, cx=34, cy=34, circ=2*Math.PI*r;
-  const offset = circ*(1-(riskScore?riskScore/4:0));
+  const offset = circ*(1-Math.min(1, riskScore?riskScore/25:0));
   const color = RC[riskLevel] || "#22c55e";
   return (
     <svg viewBox="0 0 68 68" width={size} height={size} style={{overflow:"visible",flexShrink:0}}>
@@ -550,7 +552,7 @@ function RiskTooltip({ active, payload, label }) {
       <div style={{ fontWeight:700, marginBottom:3, color:"#374151" }}>{label}</div>
       {payload.map((p,i)=>(
         <div key={i} style={{ color:p.color, marginBottom:1 }}>
-          {p.name}: {p.name==="Risk Score" ? (RISK_LABEL[Math.round(p.value)] || p.value) : p.value}
+          {p.name}: {p.name==="Risk Score" ? `${p.value?.toFixed?p.value.toFixed(1):p.value}/100` : p.value}
         </div>
       ))}
     </div>
@@ -774,7 +776,7 @@ export default function App() {
   TARGET_COUNTIES.forEach(c=>{ riskByCounty[c]=apiCounties[c]?.risk_level||"Moderate"; });
 
   const currentRisk      = sel ? (apiCounties[sel]?.risk_level||apiDetail?.risk_level||"Unknown") : null;
-  const currentRiskScore = currentRisk ? (RISK_SCORE[currentRisk]||0) : 0;
+  const currentRiskScore = sel ? (apiCounties[sel]?.risk_score ?? apiDetail?.risk_score ?? 0) : 0;
   const contextRisk      = (currentRisk && currentRisk!=="Unknown") ? currentRisk : (geoData?.risk_level||"Low");
   const lPal = getLightPal(contextRisk);
 
@@ -783,7 +785,7 @@ export default function App() {
   const chartData = (() => {
     if (!apiHistory) return [];
     const rec = apiHistory.records||apiHistory.history||[];
-    return rec.map(h=>({ d:`${MONTHS[h.month-1]}'${String(h.year).slice(2)}`, riskScore:RISK_SCORE[h.predicted_risk]??null, actual:h.monthly_cases>0?Math.round(h.monthly_cases):null })).filter(r=>r.riskScore!=null);
+    return rec.map(h=>({ d:`${MONTHS[h.month-1]}'${String(h.year).slice(2)}`, riskScore:h.risk_score??null, actual:h.monthly_cases>0?Math.round(h.monthly_cases):null })).filter(r=>r.riskScore!=null);
   })();
 
   const envData = apiEnvHistory?.records || [];
@@ -826,7 +828,7 @@ export default function App() {
     const rs = geoData?.risk_score||0;
     const rl = geoData?.risk_level;
     const dc = geoData?.detected_county;
-    const isHigh = rs>=3;
+    const isHigh = rs>=8;
 
     return (
       <div style={{ minHeight:"100vh", maxWidth:480, margin:"0 auto", background:dp.bg, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"space-between", fontFamily:"'Inter',system-ui,sans-serif", padding:"0 20px 40px", position:"relative", overflow:"hidden" }}>
@@ -1100,7 +1102,7 @@ export default function App() {
                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false}/>
                         <XAxis dataKey="label" tick={{fontSize:6,fill:"#94a3b8"}} interval={3} angle={-30} textAnchor="end" height={32}/>
                         <YAxis yAxisId="p" tick={{fontSize:7,fill:"#4ade80"}} width={28}/>
-                        <YAxis yAxisId="r" orientation="right" domain={[0.5,4.5]} ticks={[1,2,3,4]} tickFormatter={v=>RISK_LABEL[v]?.[0]||""} tick={{fontSize:7,fill:"#c2573d"}} width={18}/>
+                        <YAxis yAxisId="r" orientation="right" domain={[0,25]} tickFormatter={v=>v} tick={{fontSize:7,fill:"#c2573d"}} width={22}/>
                         <Tooltip content={<LightTooltip/>}/>
                         <Legend wrapperStyle={{fontSize:9,paddingTop:4}}/>
                         <Line yAxisId="p" type="monotone" dataKey="precip_mm"  name="Precipitation (mm)" stroke="#4ade80" strokeWidth={1.8} dot={{r:1.5,fill:"#4ade80"}} connectNulls/>
@@ -1125,11 +1127,11 @@ export default function App() {
 
                     {/* Chart 3: Historic risk vs cases */}
                     {chartData.length>0 && (
-                      <LightChart title={`${sel} — Risk Index vs Recorded Cases`} sub="Predicted risk (1–4) and confirmed Valley Fever cases" riskLevel={currentRisk||"Low"}>
+                      <LightChart title={`${sel} — Risk Index vs Recorded Cases`} sub="Predicted risk (0–100 Sporisk score) and confirmed Valley Fever cases" riskLevel={currentRisk||"Low"}>
                         <ComposedChart data={chartData} margin={{top:4,right:16,bottom:0,left:0}}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false}/>
                           <XAxis dataKey="d" tick={{fontSize:6,fill:"#94a3b8"}} interval={3} angle={-30} textAnchor="end" height={32}/>
-                          <YAxis yAxisId="risk" domain={[0.5,4.5]} ticks={[1,2,3,4]} tickFormatter={v=>RISK_LABEL[v]?.[0]||""} tick={{fontSize:7,fill:"#7c3aed"}} width={22}/>
+                          <YAxis yAxisId="risk" domain={[0,25]} tickFormatter={v=>v} tick={{fontSize:7,fill:"#7c3aed"}} width={22}/>
                           <YAxis yAxisId="cases" orientation="right" tick={{fontSize:7,fill:"#60a5fa"}} width={30}/>
                           <Tooltip content={<RiskTooltip/>}/>
                           <Legend wrapperStyle={{fontSize:9,paddingTop:4}}/>
