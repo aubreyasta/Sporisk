@@ -819,80 +819,269 @@ export default function App() {
     const isHigh = rs >= 8;
 
     return (
-      <div style={{ minHeight: "100vh", maxWidth: 480, margin: "0 auto", background: dp.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between", fontFamily: "'Inter',system-ui,sans-serif", padding: "0 20px 40px", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", top: "28%", left: "50%", transform: "translateX(-50%)", width: 260, height: 260, borderRadius: "50%", background: `radial-gradient(circle,${dp.glow} 0%,transparent 70%)`, pointerEvents: "none" }} />
+      <div style={{ minHeight: "100vh", maxWidth: 480, margin: "0 auto", background: "#0a0c0f", fontFamily: "'Georgia',serif", overflowY: "auto", position: "relative" }}>
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
+          .land-fade { opacity:0; transform:translateY(22px); animation: fadeUp 0.7s ease forwards; }
+          @keyframes fadeUp { to { opacity:1; transform:translateY(0); } }
+          .spore-particle { position:absolute; border-radius:50%; pointer-events:none; animation: drift linear infinite; }
+          @keyframes drift { 0%{transform:translateY(0) translateX(0) scale(1);opacity:0.6} 50%{opacity:0.2} 100%{transform:translateY(-120px) translateX(30px) scale(0.4);opacity:0} }
+          .pill-btn { transition: all 0.2s; }
+          .pill-btn:hover { transform:translateY(-1px); filter:brightness(1.1); }
+          .formula-card { transition: transform 0.2s, box-shadow 0.2s; }
+          .formula-card:hover { transform:translateY(-3px); box-shadow:0 8px 32px rgba(0,0,0,0.4); }
+          .stat-num { font-family:'Playfair Display',serif; }
+        `}</style>
 
-        <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 24 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 22 }}>🍄</span>
-            <span style={{ fontWeight: 900, fontSize: 20, color: "#fff", letterSpacing: -0.5 }}>SporeRisk</span>
+        {/* Floating spore particles */}
+        {[
+          { w: 6, h: 6, l: "12%", t: "20%", dur: "7s", del: "0s", bg: "rgba(217,119,6,0.4)" },
+          { w: 4, h: 4, l: "78%", t: "35%", dur: "9s", del: "1.5s", bg: "rgba(217,119,6,0.25)" },
+          { w: 8, h: 8, l: "55%", t: "60%", dur: "11s", del: "3s", bg: "rgba(217,119,6,0.2)" },
+          { w: 3, h: 3, l: "30%", t: "75%", dur: "8s", del: "0.8s", bg: "rgba(255,255,255,0.15)" },
+          { w: 5, h: 5, l: "88%", t: "15%", dur: "12s", del: "2s", bg: "rgba(217,119,6,0.3)" },
+        ].map((p, i) => (
+          <div key={i} className="spore-particle" style={{ width: p.w, height: p.h, left: p.l, top: p.t, animationDuration: p.dur, animationDelay: p.del, background: p.bg }} />
+        ))}
+
+        {/* ── HERO ── */}
+        <div style={{ padding: "28px 24px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+            <span style={{ fontSize: 24 }}>🍄</span>
+            <span style={{ fontFamily: "'Playfair Display',serif", fontWeight: 900, fontSize: 22, color: "#fff", letterSpacing: -0.5 }}>SporeRisk</span>
           </div>
-          <div style={{ fontSize: 9, padding: "4px 10px", borderRadius: 12, fontWeight: 700, background: apiConnected ? "rgba(34,197,94,0.2)" : "rgba(255,255,255,0.1)", color: apiConnected ? "#4ade80" : "#94a3b8", border: `1px solid ${apiConnected ? "rgba(34,197,94,0.4)" : "rgba(255,255,255,0.12)"}` }}>
-            {apiConnected ? "● Live" : "● Connecting…"}
+          <div style={{ fontSize: 9, padding: "4px 10px", borderRadius: 12, fontWeight: 600, letterSpacing: 0.5, background: apiConnected ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.07)", color: apiConnected ? "#4ade80" : "#64748b", border: `1px solid ${apiConnected ? "rgba(34,197,94,0.3)" : "rgba(255,255,255,0.1)"}`, fontFamily: "'DM Sans',sans-serif" }}>
+            {apiConnected ? "● LIVE" : "● CONNECTING"}
           </div>
         </div>
 
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%" }}>
-          {geoLoading ? (
-            <div style={{ textAlign: "center" }}>
-              <div style={{ width: 56, height: 56, borderRadius: "50%", border: "3px solid rgba(255,255,255,0.1)", borderTopColor: "#fff", animation: "spin 1s linear infinite", margin: "0 auto 16px" }} />
-              <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 13 }}>Detecting your location…</div>
-            </div>
-          ) : (
-            <>
-              <CircularRiskGauge riskScore={rs} riskLevel={rl} county={dc} size={236} />
-              {!geoError && dc && (
-                <div style={{ textAlign: "center", marginTop: 18, maxWidth: 300 }}>
-                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", marginBottom: 6 }}>Valley Fever Risk · California Central Valley</div>
-                  {isHigh ? (
-                    <div style={{ background: "rgba(220,38,38,0.18)", border: "1px solid rgba(220,38,38,0.35)", borderRadius: 10, padding: "10px 14px", marginTop: 8, fontSize: 11, color: "#fca5a5", lineHeight: 1.6 }}>
-                      ⚠️ {rl === "Very High" ? "CRITICAL CONDITIONS: Take immediate action to protect yourself." : "Elevated risk detected. Take precautions before going outdoors."}
-                    </div>
-                  ) : (
-                    <div style={{ background: "rgba(255,255,255,0.07)", borderRadius: 10, padding: "8px 14px", marginTop: 8, fontSize: 11, color: "rgba(255,255,255,0.55)", lineHeight: 1.6 }}>
-                      Conditions are manageable in {dc} County today.
-                    </div>
-                  )}
+        <div style={{ padding: "40px 24px 20px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="land-fade" style={{ animationDelay: "0.05s", fontSize: 10, color: "#d97706", fontFamily: "'DM Sans',sans-serif", fontWeight: 600, letterSpacing: 2, marginBottom: 14, textTransform: "uppercase" }}>
+            UC San Diego · HackMerced XI · 2026
+          </div>
+          <h1 className="land-fade" style={{ animationDelay: "0.15s", fontFamily: "'Playfair Display',serif", fontSize: 38, fontWeight: 900, color: "#fff", lineHeight: 1.1, margin: "0 0 14px", letterSpacing: -1 }}>
+            Valley Fever<br /><span style={{ color: "#d97706" }}>Risk Intelligence</span><br />for the Central Valley
+          </h1>
+          <p className="land-fade" style={{ animationDelay: "0.25s", fontSize: 13, color: "rgba(255,255,255,0.5)", lineHeight: 1.7, margin: "0 0 24px", fontFamily: "'DM Sans',sans-serif", fontWeight: 300 }}>
+            Spatio-temporal deep learning that predicts Coccidioidomycosis spore risk 4–6 months ahead — turning freely available environmental data into an early warning system for 8 Central Valley counties.
+          </p>
+
+          {/* Live risk pill */}
+          <div className="land-fade" style={{ animationDelay: "0.35s" }}>
+            {geoLoading ? (
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 100, padding: "10px 18px" }}>
+                <div style={{ width: 14, height: 14, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.1)", borderTopColor: "#d97706", animation: "spin 0.8s linear infinite" }} />
+                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", fontFamily: "'DM Sans',sans-serif" }}>Detecting your location…</span>
+              </div>
+            ) : dc ? (
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 12, background: isHigh ? "rgba(220,38,38,0.12)" : "rgba(217,119,6,0.1)", border: `1px solid ${isHigh ? "rgba(220,38,38,0.3)" : "rgba(217,119,6,0.25)"}`, borderRadius: 100, padding: "10px 20px" }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: isHigh ? "#dc2626" : "#d97706", boxShadow: `0 0 8px ${isHigh ? "#dc2626" : "#d97706"}` }} />
+                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", fontFamily: "'DM Sans',sans-serif", fontWeight: 500 }}>
+                  📍 {dc} County — <strong style={{ color: isHigh ? "#f87171" : "#fbbf24" }}>{rl || "Low"} Risk</strong> · {rs.toFixed(1)}/100
+                </span>
+              </div>
+            ) : (
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 100, padding: "10px 18px" }}>
+                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", fontFamily: "'DM Sans',sans-serif" }}>Enable location for live risk</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── PUBLIC HEALTH STATS ── */}
+        <div className="land-fade" style={{ animationDelay: "0.4s", padding: "28px 24px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", fontFamily: "'DM Sans',sans-serif", fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>The Epidemic</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            {[
+              { n: "~12,500", sub: "CA cases in 2024", note: "All-time record", color: "#f87171" },
+              { n: "49", sub: "Kern County deaths", note: "2023 alone", color: "#fbbf24" },
+              { n: "4–6mo", sub: "biological lag", note: "Grow-and-blow cycle", color: "#34d399" },
+              { n: "8", sub: "counties modeled", note: "18,056 daily obs.", color: "#60a5fa" },
+            ].map((s, i) => (
+              <div key={i} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "14px 16px" }}>
+                <div className="stat-num" style={{ fontSize: 26, fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.n}</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", fontFamily: "'DM Sans',sans-serif", marginTop: 4, fontWeight: 500 }}>{s.sub}</div>
+                <div style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", fontFamily: "'DM Sans',sans-serif", marginTop: 2 }}>{s.note}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── TWO-PHASE FORMULA ── */}
+        <div className="land-fade" style={{ animationDelay: "0.5s", padding: "28px 24px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", fontFamily: "'DM Sans',sans-serif", fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>The Algorithm</div>
+          <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 20, color: "#fff", fontWeight: 700, marginBottom: 6 }}>Two-Phase Risk Index</div>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", fontFamily: "'DM Sans',sans-serif", lineHeight: 1.6, margin: "0 0 20px", fontWeight: 300 }}>
+            Growth without dispersal = zero cases. Dispersal without growth = nothing to disperse. Both phases must align for an outbreak.
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {/* Gpot card */}
+            <div className="formula-card" style={{ background: "rgba(217,119,6,0.08)", border: "1px solid rgba(217,119,6,0.2)", borderRadius: 12, padding: "14px 16px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                <div>
+                  <div style={{ fontSize: 9, color: "#d97706", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>Phase 1 · Growth Potential</div>
+                  <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 15, color: "#fff", marginTop: 3 }}>G<sub>pot</sub></div>
                 </div>
-              )}
-              {geoError && <div style={{ textAlign: "center", marginTop: 16, color: "rgba(255,255,255,0.35)", fontSize: 12 }}>{geoError} — Explore the map manually</div>}
-            </>
-          )}
+                <span style={{ fontSize: 20 }}>🌧️</span>
+              </div>
+              <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, color: "rgba(255,255,255,0.55)", lineHeight: 1.8, background: "rgba(0,0,0,0.2)", borderRadius: 8, padding: "8px 12px" }}>
+                0.35 × SM<sub>lag6mo</sub> + 0.20 × T<sub>lag6mo</sub> + 0.30 × P<sub>lag1.5yr</sub>
+              </div>
+              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "'DM Sans',sans-serif", marginTop: 8, lineHeight: 1.5 }}>
+                Was the ground wet 6 months ago? Was it warm enough for growth? Did it rain 1.5 years ago — the drought/deluge signal?
+              </div>
+            </div>
+            {/* × operator */}
+            <div style={{ textAlign: "center", fontSize: 22, color: "rgba(255,255,255,0.2)", fontFamily: "'Playfair Display',serif" }}>×</div>
+            {/* Erisk card */}
+            <div className="formula-card" style={{ background: "rgba(220,38,38,0.07)", border: "1px solid rgba(220,38,38,0.18)", borderRadius: 12, padding: "14px 16px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                <div>
+                  <div style={{ fontSize: 9, color: "#f87171", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>Phase 2 · Exposure Risk</div>
+                  <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 15, color: "#fff", marginTop: 3 }}>E<sub>risk</sub></div>
+                </div>
+                <span style={{ fontSize: 20 }}>💨</span>
+              </div>
+              <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, color: "rgba(255,255,255,0.55)", lineHeight: 1.8, background: "rgba(0,0,0,0.2)", borderRadius: 8, padding: "8px 12px" }}>
+                0.25 × PM10<sub>1mo</sub> + 0.15 × (1−SM<sub>now</sub>) + 0.05 × Wind + 0.20 × T<sub>max</sub>
+              </div>
+              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "'DM Sans',sans-serif", marginTop: 8, lineHeight: 1.5 }}>
+                Is air dusty? Is soil dry enough to release spores? Are winds carrying particulates? Is it hot enough for maturation?
+              </div>
+            </div>
+            {/* = result */}
+            <div style={{ textAlign: "center", fontSize: 22, color: "rgba(255,255,255,0.2)", fontFamily: "'Playfair Display',serif" }}>×100</div>
+            <div style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: "12px 16px", textAlign: "center" }}>
+              <div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", fontFamily: "'DM Sans',sans-serif", fontWeight: 600, letterSpacing: 1.5, textTransform: "uppercase" }}>Sporisk Score</div>
+              <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 28, color: "#fff", fontWeight: 700, margin: "4px 0 2px" }}>0 – 100</div>
+              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontFamily: "'DM Sans',sans-serif" }}>Low · Moderate · High · Very High</div>
+            </div>
+          </div>
+          <div style={{ marginTop: 12, textAlign: "right" }}>
+            <a href="https://sporisk.vercel.app" target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, color: "#d97706", fontFamily: "'DM Sans',sans-serif", textDecoration: "none", fontWeight: 600 }}>Full scientific methodology →</a>
+          </div>
         </div>
 
-        <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 10 }}>
-          {isHigh && geoData?.advice?.length > 0 && (
-            <div style={{ background: "rgba(220,38,38,0.12)", border: "1px solid rgba(220,38,38,0.28)", borderRadius: 12, padding: "10px 14px" }}>
-              <div style={{ fontSize: 9, color: "#f87171", fontWeight: 700, letterSpacing: 1, marginBottom: 5 }}>⚠️ IMMEDIATE ACTIONS</div>
-              {geoData.advice.slice(0, 3).map((a, i) => <div key={i} style={{ fontSize: 11, color: "#fca5a5", lineHeight: 1.6, marginBottom: 2 }}>• {a}</div>)}
-            </div>
-          )}
-          <button onClick={() => goMap(dc)} style={{ width: "100%", padding: "14px", borderRadius: 14, border: "none", background: isHigh ? "#dc2626" : "rgba(255,255,255,0.14)", color: "#fff", fontWeight: 800, fontSize: 15, cursor: "pointer" }}>
-            {isHigh ? "⚠️ View Risk Map & Details →" : "View Map →"}
+        {/* ── ML MODELS ── */}
+        <div className="land-fade" style={{ animationDelay: "0.6s", padding: "28px 24px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", fontFamily: "'DM Sans',sans-serif", fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>Machine Learning</div>
+          <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 20, color: "#fff", fontWeight: 700, marginBottom: 16 }}>Two Complementary Models</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {[
+              {
+                icon: "🌲", name: "Random Forest", badge: "Baseline",
+                badgeColor: "rgba(96,165,250,0.15)", badgeBorder: "rgba(96,165,250,0.3)", badgeText: "#60a5fa",
+                desc: "200 trees, max depth 10. Uses 16 hand-engineered lag features encoding grow-and-blow biology. Validated with Leave-One-County-Out CV.",
+                stats: [{ l: "#1 feature", v: "sm_lag6 (22.3%)" }, { l: "Validation", v: "LOCO cross-val" }, { l: "Output", v: "Gpot × Erisk × 100" }],
+              },
+              {
+                icon: "🕸️", name: "T-GCN", badge: "Advanced",
+                badgeColor: "rgba(167,139,250,0.15)", badgeBorder: "rgba(167,139,250,0.3)", badgeText: "#a78bfa",
+                desc: "Temporal Graph Convolutional Network — combines a GNN (spatial: county-to-county influence) with a GRU (temporal: multi-month lag). Learns patterns end-to-end.",
+                stats: [{ l: "Graph", v: "8 nodes, 11 edges" }, { l: "Lookback", v: "6-month window" }, { l: "Output", v: "Case count forecast" }],
+              },
+            ].map((m, i) => (
+              <div key={i} className="formula-card" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "16px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 22 }}>{m.icon}</span>
+                    <div>
+                      <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 16, color: "#fff", fontWeight: 700 }}>{m.name}</div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 9, padding: "3px 9px", borderRadius: 100, background: m.badgeColor, border: `1px solid ${m.badgeBorder}`, color: m.badgeText, fontFamily: "'DM Sans',sans-serif", fontWeight: 700, letterSpacing: 0.5 }}>{m.badge}</div>
+                </div>
+                <p style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontFamily: "'DM Sans',sans-serif", lineHeight: 1.6, margin: "0 0 12px", fontWeight: 300 }}>{m.desc}</p>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {m.stats.map((s, j) => (
+                    <div key={j} style={{ flex: 1, background: "rgba(0,0,0,0.25)", borderRadius: 8, padding: "7px 8px", textAlign: "center" }}>
+                      <div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", fontFamily: "'DM Sans',sans-serif", marginBottom: 2 }}>{s.l}</div>
+                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.7)", fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>{s.v}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── DATA PIPELINE ── */}
+        <div className="land-fade" style={{ animationDelay: "0.65s", padding: "28px 24px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", fontFamily: "'DM Sans',sans-serif", fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>Data Pipeline</div>
+          <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 20, color: "#fff", fontWeight: 700, marginBottom: 16 }}>From Environment to Prediction</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {[
+              { step: "01", label: "Scraper", desc: "NOAA · EPA AQS · Open-Meteo · CDPH", icon: "📡", color: "#60a5fa" },
+              { step: "02", label: "Data Collector", desc: "Lag engineering · normalization · master CSV", icon: "⚙️", color: "#34d399" },
+              { step: "03", label: "Random Forest", desc: "Gpot × Erisk × 100 → baseline_predictions.csv", icon: "🌲", color: "#fbbf24" },
+              { step: "04", label: "T-GCN", desc: "GNN + GRU → tgcn_predictions.csv", icon: "🕸️", color: "#a78bfa" },
+              { step: "05", label: "FastAPI Backend", desc: "Railway · live weather · Gemini AI", icon: "⚡", color: "#f87171" },
+              { step: "06", label: "React Frontend", desc: "Leaflet map · real-time risk · SMS alerts", icon: "📱", color: "#d97706" },
+            ].map((s, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: "rgba(255,255,255,0.02)", borderRadius: 10, border: "1px solid rgba(255,255,255,0.05)" }}>
+                <div style={{ fontSize: 9, fontFamily: "'DM Sans',sans-serif", fontWeight: 700, color: "rgba(255,255,255,0.2)", minWidth: 20 }}>{s.step}</div>
+                <div style={{ fontSize: 18 }}>{s.icon}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>{s.label}</div>
+                  <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "'DM Sans',sans-serif", marginTop: 1 }}>{s.desc}</div>
+                </div>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: s.color, flexShrink: 0 }} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── TEAM ── */}
+        <div className="land-fade" style={{ animationDelay: "0.7s", padding: "28px 24px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", fontFamily: "'DM Sans',sans-serif", fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Team · UC San Diego</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            {[
+              { init: "A", name: "Samudera Bagas Aubreyasta", role: "Data Science" },
+              { init: "B", name: "Moch Raka Aryaputra", role: "Mathematics" },
+              { init: "C", name: "Olo Hot B. M. S. Margura Silitonga", role: "Electrical Eng." },
+              { init: "D", name: "Nathan Raphael Martua Nainggolan", role: "Urban Studies" },
+            ].map((t, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 9, padding: "10px 12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 10 }}>
+                <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(217,119,6,0.2)", border: "1px solid rgba(217,119,6,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#d97706", fontFamily: "'Playfair Display',serif", flexShrink: 0 }}>{t.init}</div>
+                <div>
+                  <div style={{ fontSize: 10, color: "rgba(255,255,255,0.65)", fontFamily: "'DM Sans',sans-serif", fontWeight: 600, lineHeight: 1.3 }}>{t.name.split(" ").slice(0, 2).join(" ")}</div>
+                  <div style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", fontFamily: "'DM Sans',sans-serif", marginTop: 1 }}>{t.role}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── CTA ── */}
+        <div className="land-fade" style={{ animationDelay: "0.75s", padding: "28px 24px 48px" }}>
+          <button className="pill-btn" onClick={() => goMap(dc)} style={{ width: "100%", padding: "16px", borderRadius: 14, border: "none", background: isHigh ? "#dc2626" : "#d97706", color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "'DM Sans',sans-serif", letterSpacing: 0.3, marginBottom: 10, boxShadow: isHigh ? "0 4px 20px rgba(220,38,38,0.35)" : "0 4px 20px rgba(217,119,6,0.35)" }}>
+            {isHigh ? "⚠️ High Risk Detected — View Map →" : "Explore the Risk Map →"}
           </button>
           <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={() => { sessionStorage.setItem("sr_seen", "1"); setView("map"); setShowSms(true); }} style={{ flex: 1, padding: "10px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.65)", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>📱 Get SMS Alerts</button>
-            <button onClick={() => setCo(c => !c)} style={{ flex: 1, padding: "10px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.65)", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>💬 Ask AI</button>
+            <button className="pill-btn" onClick={() => { sessionStorage.setItem("sr_seen", "1"); setView("map"); setShowSms(true); }} style={{ flex: 1, padding: "11px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>📱 SMS Alerts</button>
+            <button className="pill-btn" onClick={() => setCo(c => !c)} style={{ flex: 1, padding: "11px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>💬 Ask AI</button>
+            <a href="https://sporisk.vercel.app" target="_blank" rel="noopener noreferrer" className="pill-btn" style={{ flex: 1, padding: "11px", borderRadius: 12, border: "1px solid rgba(217,119,6,0.2)", background: "rgba(217,119,6,0.06)", color: "#d97706", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans',sans-serif", textDecoration: "none", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center" }}>📖 Science</a>
           </div>
         </div>
 
+        {/* Chat overlay (dark theme) */}
         {co && (
-          <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, height: "70vh", background: "#111827", borderRadius: "16px 16px 0 0", boxShadow: "0 -4px 24px rgba(0,0,0,0.3)", zIndex: 400, display: "flex", flexDirection: "column", border: "1px solid #1f2937" }}>
+          <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, height: "70vh", background: "#111827", borderRadius: "16px 16px 0 0", boxShadow: "0 -4px 24px rgba(0,0,0,0.5)", zIndex: 400, display: "flex", flexDirection: "column", border: "1px solid #1f2937" }}>
             <div style={{ padding: "12px 16px 8px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #1f2937" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}><span>🍄</span><span style={{ fontWeight: 800, fontSize: 14, color: "#f9fafb" }}>SporeRisk AI</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}><span>🍄</span><span style={{ fontWeight: 800, fontSize: 14, color: "#f9fafb", fontFamily: "'DM Sans',sans-serif" }}>SporeRisk AI</span></div>
               <button onClick={() => setCo(false)} style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#6b7280" }}>✕</button>
             </div>
             <div style={{ flex: 1, overflowY: "auto", padding: "0 12px 8px" }}>
               {msgs.map((m, i) => (
                 <div key={i} style={{ display: "flex", justifyContent: m.r === "u" ? "flex-end" : "flex-start", marginBottom: 8, marginTop: 8 }}>
-                  <div style={{ maxWidth: "82%", padding: "8px 12px", fontSize: 12, lineHeight: 1.5, borderRadius: 12, background: m.r === "u" ? "#3b82f6" : "#1f2937", color: m.r === "u" ? "#fff" : "#9ca3af" }}>{m.t}</div>
+                  <div style={{ maxWidth: "82%", padding: "8px 12px", fontSize: 12, lineHeight: 1.5, borderRadius: 12, background: m.r === "u" ? "#3b82f6" : "#1f2937", color: m.r === "u" ? "#fff" : "#9ca3af", fontFamily: "'DM Sans',sans-serif" }}>{m.t}</div>
                 </div>
               ))}
               {cb && <div style={{ display: "flex", gap: 4, padding: "4px 0" }}>{[0, 1, 2].map(i => <div key={i} style={{ width: 6, height: 6, borderRadius: 3, background: "#374151", animation: `bounce 1s ${i * 0.15}s infinite` }} />)}</div>}
               <div ref={ce} />
             </div>
             <div style={{ padding: "8px 12px 16px", borderTop: "1px solid #1f2937", display: "flex", gap: 8 }}>
-              <input value={ci} onChange={e => setCi(e.target.value)} onKeyDown={e => e.key === "Enter" && send()} placeholder="Ask about Valley Fever…" style={{ flex: 1, border: "1px solid #374151", borderRadius: 20, padding: "8px 14px", fontSize: 13, outline: "none", background: "#1f2937", color: "#f9fafb" }} disabled={cb} />
+              <input value={ci} onChange={e => setCi(e.target.value)} onKeyDown={e => e.key === "Enter" && send()} placeholder="Ask about Valley Fever…" style={{ flex: 1, border: "1px solid #374151", borderRadius: 20, padding: "8px 14px", fontSize: 13, outline: "none", background: "#1f2937", color: "#f9fafb", fontFamily: "'DM Sans',sans-serif" }} disabled={cb} />
               <button onClick={send} disabled={cb || !ci.trim()} style={{ background: "#6366f1", border: "none", borderRadius: 20, padding: "8px 16px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", opacity: cb || !ci.trim() ? 0.5 : 1 }}>↑</button>
             </div>
           </div>
