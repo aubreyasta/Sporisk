@@ -18,9 +18,7 @@ async function apiFetch(path) {
 
 const TARGET_COUNTIES = ["Fresno","Kern","Kings","Madera","Merced","San Joaquin","Stanislaus","Tulare"];
 const RC       = { Low:"#22c55e", Moderate:"#d97706", High:"#dc2626", "Very High":"#b91c1c" };
-// Tier labels for display (tier is still derived from continuous score)
-const RISK_LABEL_FROM_SCORE = s => s==null?"Unknown": s<3?"Low": s<8?"Moderate": s<15?"High":"Very High";
-// Legacy map kept for any chart tick formatters that still use integer keys
+// eslint-disable-next-line no-unused-vars
 const RISK_LABEL = { 1:"Low", 2:"Moderate", 3:"High", 4:"Very High" };
 
 // Dark palette — landing screen only
