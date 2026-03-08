@@ -18,15 +18,25 @@ Run:
   uvicorn api:app --host 0.0.0.0 --port 8000 --reload
 """
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 import pandas as pd
 import numpy as np
 import os
 import json
+import uuid
 from datetime import datetime, date
+
+try:
+    import psycopg2
+    import psycopg2.extras
+    _HAS_PSYCOPG2 = True
+except ImportError:
+    _HAS_PSYCOPG2 = False
+
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # APP INIT
@@ -38,12 +48,19 @@ app = FastAPI(
     version="1.0.0",
 )
 
+ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "").split(",") if os.environ.get("ALLOWED_ORIGINS") else [
+    "https://sporisk-main.vercel.app",
+    "https://sporisk.vercel.app",
+    "http://localhost:3000",
+    "*",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Lock down in production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -90,9 +107,58 @@ def load_tgcn():
     return df
 
 
+def load_env_data():
+    """Load and merge weather + air quality historical data."""
+    # Look in backend/data/ first, then fall back to ../data/
+    data_dir = os.path.join(DATA_DIR, "data")
+    if not os.path.isdir(data_dir):
+        data_dir = os.path.join(os.path.dirname(DATA_DIR), "data")
+
+    weather_path = os.path.join(data_dir, "weather.csv")
+    aq_path = os.path.join(data_dir, "air_quality.csv")
+
+    try:
+        weather = pd.read_csv(weather_path, parse_dates=["date"])
+        weather["year"] = weather["date"].dt.year
+        weather["month"] = weather["date"].dt.month
+
+        aq = pd.read_csv(aq_path, parse_dates=["date"])
+        aq["year"] = aq["date"].dt.year
+        aq["month"] = aq["date"].dt.month
+
+        # Monthly averages
+        weather_monthly = weather.groupby(["county", "year", "month"]).agg(
+            precip_mm=("precip_mm", "sum"),
+            soil_moisture=("soil_moisture_m3m3", "mean"),
+            wind_speed=("wind_speed_kmh", "mean"),
+        ).reset_index()
+
+        aq_monthly = aq.groupby(["county", "year", "month"]).agg(
+            pm10=("pm10_ugm3", "mean"),
+        ).reset_index()
+
+        merged = weather_monthly.merge(aq_monthly, on=["county", "year", "month"], how="left")
+        return merged
+    except Exception as e:
+        print(f"  Env data load warning: {e}")
+        return pd.DataFrame()
+
+
+def get_db_conn():
+    """Get a psycopg2 connection, or None if unavailable."""
+    if not _HAS_PSYCOPG2 or not DATABASE_URL:
+        return None
+    try:
+        return psycopg2.connect(DATABASE_URL)
+    except Exception as e:
+        print(f"DB connection error: {e}")
+        return None
+
+
 # Load on startup
 baseline_df = load_baseline()
 tgcn_df = load_tgcn()
+env_df = load_env_data()
 
 
 def detect_county(lat: float, lon: float) -> Optional[str]:
@@ -228,42 +294,64 @@ def get_gemini_client(with_search=False):
         return None
 
 
-def generate_risk_summary(county: str, risk_data: dict, env_stats: dict) -> list[str]:
+def generate_risk_summary(county: str, risk_data: dict, env_stats: dict) -> dict:
     """
-    Generate Apple-notification-style bullet points explaining the risk.
-    Falls back to rule-based summaries if Gemini is unavailable.
+    Generate risk summary bullets + actionable advice.
+    Tone adapts: calm for low risk, urgent/alarming for high risk.
+    Returns: {"bullets": [...], "advice": [...]}
     """
     model = get_gemini_client()
+    risk_level = risk_data.get("risk_level", "Unknown")
+    risk_score = {"Low": 1, "Moderate": 2, "High": 3, "Very High": 4}.get(risk_level, 2)
+    is_high = risk_score >= 3
 
     if model:
+        if is_high:
+            tone_instruction = (
+                "Use URGENT, alarming language. This is a serious public health situation. "
+                "Make the user understand they need to take action RIGHT NOW. "
+                "Use phrases like 'Dangerous conditions', 'Take immediate precautions', 'Risk is critically elevated'. "
+                "Include 2-3 specific actionable advice items (wear N95 mask outdoors, avoid dusty areas, see a doctor if you have symptoms)."
+            )
+        else:
+            tone_instruction = (
+                "Use calm, reassuring language. Conditions are manageable. "
+                "Be informative but not alarming. "
+                "Brief mention of standard precautions is fine."
+            )
+
         prompt = f"""You are SporeRisk, a Valley Fever risk advisor for California's Central Valley.
-Given the following data for {county} County, generate 3-5 short, plain-English bullet points
-explaining WHY the current risk level is what it is. Think Apple notification summary style —
-concise, actionable, no jargon.
 
-Risk Level: {risk_data.get('risk_level', 'Unknown')}
-Predicted Monthly Cases: {risk_data.get('predicted_cases', 'N/A')}
+{tone_instruction}
 
-Current Environmental Conditions:
-- Temperature: {env_stats.get('temperature_c', 'N/A')}C
-- Wind Speed: {env_stats.get('wind_speed_kmh', 'N/A')} km/h
-- Precipitation: {env_stats.get('precipitation_mm', 'N/A')} mm
-- PM10 (dust): {env_stats.get('pm10_ugm3', 'N/A')} ug/m3
+County: {county}
+Risk Level: {risk_level} (score {risk_score}/4)
+Temperature: {env_stats.get('temperature_c', 'N/A')}°C
+Wind Speed: {env_stats.get('wind_speed_kmh', 'N/A')} km/h
+Precipitation: {env_stats.get('precipitation_mm', 'N/A')} mm
+PM10 Dust: {env_stats.get('pm10_ugm3', 'N/A')} µg/m³
 
-Respond ONLY with a JSON array of strings. No markdown, no explanation. Example:
-["Wind speeds are elevated, increasing dust dispersal", "Dry soil conditions favor spore release"]
+Return a JSON object with exactly two keys:
+- "bullets": array of 3-4 strings explaining WHY the risk is at this level
+- "advice": array of 2-4 strings with specific actionable steps for residents
+
+No markdown. Example format:
+{{"bullets": ["Soil is critically dry...", "PM10 levels are elevated..."], "advice": ["Wear N95 mask outdoors", "Avoid agricultural areas today"]}}
 """
         try:
             response = model.generate_content(prompt)
-            text = response.text.strip()
-            # Clean potential markdown fencing
-            text = text.replace("```json", "").replace("```", "").strip()
-            return json.loads(text)
+            text = response.text.strip().replace("```json", "").replace("```", "").strip()
+            parsed = json.loads(text)
+            if isinstance(parsed, dict) and "bullets" in parsed:
+                return parsed
+            if isinstance(parsed, list):
+                return {"bullets": parsed, "advice": []}
         except Exception as e:
             print(f"Gemini summary error: {e}")
 
     # Fallback: rule-based summaries
     bullets = []
+    advice = []
     risk = risk_data.get("risk_level", "Unknown")
 
     wind = env_stats.get("wind_speed_kmh")
@@ -277,26 +365,47 @@ Respond ONLY with a JSON array of strings. No markdown, no explanation. Example:
         bullets.append(f"Wind is calm at {wind:.0f} km/h, limiting airborne spore spread")
 
     if pm10 and pm10 > 50:
-        bullets.append(f"PM10 dust levels are high ({pm10:.0f} µg/m³), suggesting active soil disturbance")
+        bullets.append(f"PM10 dust levels are dangerously high ({pm10:.0f} µg/m³) — active soil disturbance detected")
     elif pm10 and pm10 < 20:
-        bullets.append(f"Dust levels are low ({pm10:.0f} µg/m³), reducing airborne exposure")
+        bullets.append(f"Dust levels are low ({pm10:.0f} µg/m³), reducing airborne exposure risk")
 
     if temp and temp > 35:
-        bullets.append(f"High temperatures ({temp:.0f}°C) are drying soil, which can release fungal spores")
+        bullets.append(f"Extreme heat ({temp:.0f}°C) is critically drying soil and releasing fungal spores")
     elif temp and temp > 25:
-        bullets.append(f"Warm conditions ({temp:.0f}°C) are within the range that supports Cocci growth cycles")
+        bullets.append(f"Warm conditions ({temp:.0f}°C) are within the optimal range for Cocci growth cycles")
 
     if precip is not None and precip > 5:
-        bullets.append("Recent rainfall may temporarily suppress dust but feeds future fungal growth")
+        bullets.append("Recent rainfall may temporarily suppress dust but feeds future fungal biomass growth")
     elif precip is not None and precip == 0:
-        bullets.append("No recent rain — dry conditions increase soil cracking and spore exposure")
+        bullets.append("Zero precipitation — dangerously dry soil conditions accelerate spore release")
 
-    if risk in ("High", "Very High"):
-        bullets.append("Consider wearing an N95 mask during outdoor activities, especially near construction or agricultural sites")
+    if risk == "Very High":
+        bullets.append(f"⚠️ CRITICAL: {risk_level} risk detected — conditions are dangerous for outdoor exposure")
+        advice = [
+            "Wear an N95 or P100 respirator for ALL outdoor activities",
+            "Avoid agricultural fields, construction sites, and disturbed soil entirely",
+            "See a doctor immediately if you develop cough, fever, or chest pain",
+            "Keep windows and car vents closed — use recirculation mode",
+        ]
+    elif risk == "High":
+        bullets.append(f"Elevated risk detected — outdoor workers and immunocompromised individuals are especially vulnerable")
+        advice = [
+            "Wear an N95 mask during outdoor activities, especially near farms or construction",
+            "Reduce time outdoors during windy or dusty conditions",
+            "Monitor for symptoms: cough, fever, fatigue lasting more than a week",
+        ]
     elif risk == "Moderate":
-        bullets.append("Standard precautions recommended for outdoor workers and immunocompromised individuals")
+        advice = [
+            "Standard precautions recommended for outdoor workers",
+            "Wear a dust mask if working with soil",
+        ]
+    else:
+        advice = ["Conditions are manageable — standard hygiene and outdoor awareness is sufficient"]
 
-    return bullets if bullets else ["Current conditions are within typical seasonal range for this area"]
+    if not bullets:
+        bullets = ["Current conditions are within typical seasonal range for this area"]
+
+    return {"bullets": bullets, "advice": advice}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -331,6 +440,11 @@ def root():
     }
 
 
+@app.get("/health")
+def health_check():
+    return {"status": "ok", "counties": len(COUNTY_META), "baseline_rows": len(baseline_df)}
+
+
 @app.get("/risk")
 def get_risk_by_location(
     lat: float = Query(..., description="Latitude"),
@@ -343,20 +457,22 @@ def get_risk_by_location(
 
     risk = get_latest_risk(county)
     env = get_environmental_stats(county)
-    summary = generate_risk_summary(county, risk, env)
+    summary_data = generate_risk_summary(county, risk, env)
 
     return {
         "detected_county": county,
         "risk": risk,
+        "risk_level": risk.get("risk_level") if risk else None,
+        "risk_score": {"Low": 1, "Moderate": 2, "High": 3, "Very High": 4}.get(risk.get("risk_level", ""), 0),
         "environment": env,
-        "summary": summary,
+        "summary": summary_data.get("bullets", []),
+        "advice": summary_data.get("advice", []),
     }
 
 
 @app.get("/risk/{county}")
 def get_risk_by_county(county: str):
     """Get current risk for a specific county."""
-    # Normalize county name
     county_map = {c.lower().replace(" ", ""): c for c in COUNTY_META}
     normalized = county.lower().replace(" ", "").replace("_", "")
     county_name = county_map.get(normalized)
@@ -366,12 +482,15 @@ def get_risk_by_county(county: str):
 
     risk = get_latest_risk(county_name)
     env = get_environmental_stats(county_name)
-    summary = generate_risk_summary(county_name, risk, env)
+    summary_data = generate_risk_summary(county_name, risk, env)
 
     return {
-        "risk": risk,
+        "county": county_name,
+        "risk_level": risk.get("risk_level") if risk else None,
+        "risk_score": {"Low": 1, "Moderate": 2, "High": 3, "Very High": 4}.get(risk.get("risk_level", ""), 0),
         "environment": env,
-        "summary": summary,
+        "summary": summary_data.get("bullets", []),
+        "advice": summary_data.get("advice", []),
     }
 
 
@@ -406,21 +525,24 @@ def get_history(
         (baseline_df["year"] <= end_year)
     ].sort_values(["year", "month"])
 
+    score_map = {"Low": 1, "Moderate": 2, "High": 3, "Very High": 4}
     records = []
     for _, row in data.iterrows():
+        risk_lvl = str(row["predicted_risk"]) if row["predicted_risk"] else "Low"
         records.append({
             "year": int(row["year"]),
             "month": int(row["month"]),
             "monthly_cases": round(float(row["monthly_cases"]), 1),
             "predicted_cases": round(float(row["predicted_cases"]), 1),
-            "risk_level": row["predicted_risk"],
+            "predicted_risk": risk_lvl,
+            "risk_score": score_map.get(risk_lvl, 1),
         })
 
     return {
         "county": county_name,
         "start_year": start_year,
         "end_year": end_year,
-        "data": records,
+        "records": records,
     }
 
 
@@ -492,15 +614,369 @@ def get_ai_summary(county: str):
 
     risk = get_latest_risk(county_name)
     env = get_environmental_stats(county_name)
-    summary = generate_risk_summary(county_name, risk, env)
+    summary_data = generate_risk_summary(county_name, risk, env)
 
     return {
         "county": county_name,
         "risk_level": risk.get("risk_level"),
-        "summary_bullets": summary,
+        "risk_score": {"Low": 1, "Moderate": 2, "High": 3, "Very High": 4}.get(risk.get("risk_level", ""), 0),
+        "summary_bullets": summary_data.get("bullets", []),
+        "advice": summary_data.get("advice", []),
         "environment": env,
         "generated_at": datetime.now().isoformat(),
         "ai_powered": bool(GEMINI_API_KEY),
+    }
+
+
+@app.get("/insights/{county}")
+def get_historical_insights(county: str):
+    """
+    Generate Gemini-powered historical pattern analysis with environmental context.
+    Explains WHY risk is at current level using specific data (precipitation deficits, soil moisture, etc.)
+    """
+    county_map = {c.lower().replace(" ", ""): c for c in COUNTY_META}
+    normalized = county.lower().replace(" ", "").replace("_", "")
+    county_name = county_map.get(normalized)
+
+    if not county_name:
+        raise HTTPException(404, f"County '{county}' not found")
+
+    data = baseline_df[baseline_df["county"] == county_name].sort_values(["year", "month"])
+    MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+
+    # Build yearly summary
+    yearly_rows = []
+    for yr, grp in data.groupby("year"):
+        avg_c = grp["monthly_cases"].mean()
+        max_c = grp["monthly_cases"].max()
+        high_risk = int((grp["risk_score"] >= 3).sum()) if "risk_score" in grp.columns else 0
+        yearly_rows.append(f"  {int(yr)}: avg {avg_c:.0f} cases/mo, peak {max_c:.0f}, high-risk months: {high_risk}")
+
+    yearly_summary = "\n".join(yearly_rows)
+
+    peak_month_idx = data["monthly_cases"].idxmax()
+    peak_row = data.loc[peak_month_idx]
+    peak_month_name = MONTH_NAMES[int(peak_row["month"]) - 1]
+
+    # Build environmental anomaly context from historical env data
+    env_context = ""
+    if not env_df.empty:
+        county_env = env_df[env_df["county"] == county_name].sort_values(["year", "month"])
+        if not county_env.empty:
+            # Last 6 months vs historical average
+            recent_6 = county_env.tail(6)
+            hist_avg_precip = county_env["precip_mm"].mean()
+            recent_avg_precip = recent_6["precip_mm"].mean()
+            hist_avg_soil = county_env["soil_moisture"].mean()
+            recent_avg_soil = recent_6["soil_moisture"].mean()
+            hist_avg_pm10 = county_env["pm10"].mean() if "pm10" in county_env.columns else None
+            recent_avg_pm10 = recent_6["pm10"].mean() if "pm10" in recent_6.columns else None
+
+            precip_anomaly = ((recent_avg_precip - hist_avg_precip) / max(hist_avg_precip, 0.1)) * 100
+            soil_anomaly = ((recent_avg_soil - hist_avg_soil) / max(hist_avg_soil, 0.001)) * 100
+
+            env_context = f"""
+Recent 6-month environmental conditions vs historical averages:
+- Precipitation: {recent_avg_precip:.1f} mm/mo (historical avg: {hist_avg_precip:.1f} mm/mo, {precip_anomaly:+.0f}% anomaly)
+- Soil moisture: {recent_avg_soil:.4f} m³/m³ (historical avg: {hist_avg_soil:.4f}, {soil_anomaly:+.0f}% anomaly)"""
+            if hist_avg_pm10 is not None:
+                pm10_anomaly = ((recent_avg_pm10 - hist_avg_pm10) / max(hist_avg_pm10, 0.1)) * 100
+                env_context += f"\n- PM10 dust: {recent_avg_pm10:.0f} µg/m³ (historical avg: {hist_avg_pm10:.0f}, {pm10_anomaly:+.0f}% anomaly)"
+
+    model = get_gemini_client()
+
+    if model:
+        prompt = f"""You are SporeRisk, analyzing Valley Fever risk data for {county_name} County, California.
+
+Historical case data by year:
+{yearly_summary}
+
+Peak single month: {peak_month_name} {int(peak_row["year"])} with {peak_row["monthly_cases"]:.0f} actual cases.
+{env_context}
+
+The model uses county-relative risk thresholds — High/Very High means the predicted risk is in the top 25%
+of what this specific county typically sees historically.
+
+Generate 4-5 concise, data-driven bullet points that:
+1. Explain WHY risk is currently at this level using specific numbers from the environmental data above
+2. Identify the seasonal pattern (which months/season are riskiest and why)
+3. Note any significant environmental anomalies (e.g., precipitation is X% below average, soil is critically dry)
+4. Give a practical, specific warning for residents based on actual conditions
+5. Mention year-over-year case trends if notable
+
+Be SPECIFIC — reference actual numbers. Don't be generic.
+Example of good insight: "Kern has been running 42% below average precipitation for the past 6 months, creating critically dry soil conditions that are a primary driver of the current Very High risk."
+
+Respond ONLY with a JSON array of strings. No markdown.
+"""
+        try:
+            response = model.generate_content(prompt)
+            text = response.text.strip().replace("```json", "").replace("```", "").strip()
+            insights = json.loads(text)
+            return {
+                "county": county_name,
+                "insights": insights,
+                "ai_powered": True,
+                "env_context_used": bool(env_context),
+            }
+        except Exception as e:
+            print(f"Gemini insights error: {e}")
+
+    # Rule-based fallback
+    avg_2022 = data[data["year"] == 2022]["monthly_cases"].mean()
+    avg_2024 = data[data["year"] == 2024]["monthly_cases"].mean() if 2024 in data["year"].values else avg_2022
+    peak_months = data.groupby("month")["monthly_cases"].mean()
+    peak_m = peak_months.idxmax()
+    peak_m_name = MONTH_NAMES[peak_m - 1]
+
+    insights = [
+        f"Historically, {county_name} sees peak Valley Fever risk around {peak_m_name} due to dry summer conditions.",
+        f"The 2021–2026 dataset shows cases averaging {data['monthly_cases'].mean():.0f}/month for this county.",
+        f"Year-over-year trend: 2022 averaged {avg_2022:.0f} cases/month vs 2024's {avg_2024:.0f} — a {'significant increase' if avg_2024 > avg_2022 * 1.2 else 'similar level'}.",
+    ]
+    return {
+        "county": county_name,
+        "insights": insights,
+        "ai_powered": False,
+    }
+
+
+@app.get("/env-history/{county}")
+def get_env_history(
+    county: str,
+    months: int = Query(24, description="Number of months of history to return"),
+):
+    """Get monthly environmental history (precip, soil moisture, PM10, wind) for a county."""
+    county_map = {c.lower().replace(" ", ""): c for c in COUNTY_META}
+    normalized = county.lower().replace(" ", "").replace("_", "")
+    county_name = county_map.get(normalized)
+
+    if not county_name:
+        raise HTTPException(404, f"County '{county}' not found")
+
+    if env_df.empty:
+        return {"county": county_name, "records": []}
+
+    county_env = env_df[env_df["county"] == county_name].sort_values(["year", "month"]).tail(months)
+
+    # Merge in risk_score from baseline predictions
+    score_map = {"Low": 1, "Moderate": 2, "High": 3, "Very High": 4}
+    baseline_county = baseline_df[baseline_df["county"] == county_name][["year", "month", "predicted_risk", "risk_score"]]
+
+    records = []
+    for _, row in county_env.iterrows():
+        yr, mo = int(row["year"]), int(row["month"])
+        bl_match = baseline_county[(baseline_county["year"] == yr) & (baseline_county["month"] == mo)]
+        risk_score = int(bl_match["risk_score"].iloc[0]) if not bl_match.empty and "risk_score" in bl_match.columns else None
+        if risk_score is None and not bl_match.empty:
+            risk_score = score_map.get(str(bl_match["predicted_risk"].iloc[0]), 2)
+
+        records.append({
+            "year": yr,
+            "month": mo,
+            "label": f"{['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][mo-1]}'{str(yr)[2:]}",
+            "precip_mm": round(float(row["precip_mm"]), 2) if pd.notna(row["precip_mm"]) else None,
+            "soil_moisture": round(float(row["soil_moisture"]), 4) if pd.notna(row["soil_moisture"]) else None,
+            "wind_speed": round(float(row["wind_speed"]), 1) if pd.notna(row["wind_speed"]) else None,
+            "pm10": round(float(row["pm10"]), 1) if "pm10" in row and pd.notna(row["pm10"]) else None,
+            "risk_score": risk_score,
+        })
+
+    return {"county": county_name, "records": records}
+
+
+@app.get("/clinics/{county}")
+def get_clinics(county: str):
+    """Get healthcare clinics and hospitals for a county."""
+    from clinics import get_clinics_for_county
+    county_map = {c.lower().replace(" ", ""): c for c in COUNTY_META}
+    normalized = county.lower().replace(" ", "").replace("_", "")
+    county_name = county_map.get(normalized)
+    if not county_name:
+        raise HTTPException(404, f"County '{county}' not found")
+    return {"county": county_name, "clinics": get_clinics_for_county(county_name)}
+
+
+@app.get("/clinics")
+def get_all_clinics_endpoint():
+    """Get all clinics across all counties."""
+    from clinics import get_all_clinics
+    return {"clinics": get_all_clinics(), "total": len(get_all_clinics())}
+
+
+@app.get("/vulnerable-zones/{county}")
+def get_vulnerable_zones(county: str):
+    """Get vulnerable population zones for a county (farmworker housing, schools, worksites)."""
+    from vulnerable_zones import get_zones_for_county
+    county_map = {c.lower().replace(" ", ""): c for c in COUNTY_META}
+    normalized = county.lower().replace(" ", "").replace("_", "")
+    county_name = county_map.get(normalized)
+
+    if not county_name:
+        raise HTTPException(404, f"County '{county}' not found")
+
+    zones = get_zones_for_county(county_name)
+    return {"county": county_name, "zones": zones, "count": len(zones)}
+
+
+@app.get("/vulnerable-zones")
+def get_all_vulnerable_zones():
+    """Get all vulnerable population zones across all counties."""
+    from vulnerable_zones import get_all_zones
+    all_zones = get_all_zones()
+    all_flat = []
+    for county, zones in all_zones.items():
+        for z in zones:
+            all_flat.append({**z, "county": county})
+    return {"zones": all_flat, "total": len(all_flat)}
+
+
+class DustReportRequest(BaseModel):
+    county: str
+    lat: Optional[float] = None
+    lon: Optional[float] = None
+    severity: int = 2
+    description: Optional[str] = ""
+    reporter_id: Optional[str] = None
+
+
+@app.post("/report/dust")
+def submit_dust_report(req: DustReportRequest):
+    """Submit a community dust storm report."""
+    county_map = {c.lower().replace(" ", ""): c for c in COUNTY_META}
+    normalized = req.county.lower().replace(" ", "").replace("_", "")
+    county_name = county_map.get(normalized, req.county)
+
+    reporter_id = req.reporter_id or str(uuid.uuid4())
+    badge_awarded = False
+
+    conn = get_db_conn()
+    if conn:
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO dust_reports (county, lat, lon, severity, description, reporter_id) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
+                    (county_name, req.lat, req.lon, max(1, min(3, req.severity)), req.description, reporter_id)
+                )
+                report_id = cur.fetchone()[0]
+
+                # Update badge count
+                cur.execute("""
+                    INSERT INTO user_badges (reporter_id, badge_count, last_report_at)
+                    VALUES (%s, 1, NOW())
+                    ON CONFLICT (reporter_id) DO UPDATE
+                    SET badge_count = user_badges.badge_count + 1,
+                        last_report_at = NOW()
+                    RETURNING badge_count
+                """, (reporter_id,))
+                badge_count = cur.fetchone()[0]
+
+                if badge_count >= 3 and badge_count - 1 < 3:
+                    badge_awarded = True
+                    cur.execute("UPDATE user_badges SET community_shield = TRUE WHERE reporter_id = %s", (reporter_id,))
+
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            print(f"Report insert error: {e}")
+            report_id = str(uuid.uuid4())
+        finally:
+            conn.close()
+    else:
+        report_id = str(uuid.uuid4())
+
+    return {
+        "success": True,
+        "report_id": report_id,
+        "reporter_id": reporter_id,
+        "badge_awarded": badge_awarded,
+        "message": "Community Shield badge earned! Thank you for protecting your community." if badge_awarded else "Report submitted. Thank you for keeping your community safe.",
+    }
+
+
+@app.get("/reports/{county}")
+def get_county_reports(county: str, hours: int = Query(24, description="Hours of history")):
+    """Get recent community dust storm reports for a county."""
+    county_map = {c.lower().replace(" ", ""): c for c in COUNTY_META}
+    normalized = county.lower().replace(" ", "").replace("_", "")
+    county_name = county_map.get(normalized)
+
+    if not county_name:
+        raise HTTPException(404, f"County '{county}' not found")
+
+    conn = get_db_conn()
+    if not conn:
+        return {"county": county_name, "reports": [], "count": 0}
+
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("""
+                SELECT id, severity, description, created_at
+                FROM dust_reports
+                WHERE county = %s AND created_at > NOW() - INTERVAL '%s hours'
+                ORDER BY created_at DESC
+                LIMIT 20
+            """, (county_name, hours))
+            reports = [dict(r) for r in cur.fetchall()]
+            for r in reports:
+                if r.get("created_at"):
+                    r["created_at"] = r["created_at"].isoformat()
+    except Exception as e:
+        print(f"Reports fetch error: {e}")
+        reports = []
+    finally:
+        conn.close()
+
+    return {"county": county_name, "reports": reports, "count": len(reports)}
+
+
+class SmsSubscribeRequest(BaseModel):
+    phone: str
+    county: str
+    language: str = "english"
+
+
+SMS_TEMPLATES = {
+    "english": "⚠️ SporeRisk Alert: {risk_level} Valley Fever risk in {county} County. {advice} Stay safe.",
+    "spanish": "⚠️ Alerta SporeRisk: Riesgo {risk_level} de Fiebre del Valle en el Condado de {county}. {advice} Cuídese.",
+    "hmong": "⚠️ SporeRisk Ceeb Toom: Kab Mob Valley Fever pheej hmoo {risk_level} hauv {county} Cheeb Tsam. {advice}",
+    "punjabi": "⚠️ SporeRisk ਚੇਤਾਵਨੀ: {county} ਕਾਉਂਟੀ ਵਿੱਚ {risk_level} ਵੈਲੀ ਫੀਵਰ ਖਤਰਾ। {advice}",
+}
+
+
+@app.post("/alerts/subscribe")
+def subscribe_alerts(req: SmsSubscribeRequest):
+    """Subscribe to SMS risk alerts for a county."""
+    county_map = {c.lower().replace(" ", ""): c for c in COUNTY_META}
+    normalized = req.county.lower().replace(" ", "").replace("_", "")
+    county_name = county_map.get(normalized, req.county)
+
+    lang = req.language.lower()
+    if lang not in SMS_TEMPLATES:
+        lang = "english"
+
+    conn = get_db_conn()
+    if conn:
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO sms_subscriptions (phone, county, language)
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT (phone, county) DO UPDATE SET language = EXCLUDED.language
+                """, (req.phone, county_name, lang))
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            print(f"SMS subscribe error: {e}")
+        finally:
+            conn.close()
+
+    lang_names = {"english": "English", "spanish": "Spanish / Español", "hmong": "Hmong", "punjabi": "Punjabi / ਪੰਜਾਬੀ"}
+    return {
+        "success": True,
+        "county": county_name,
+        "language": lang_names.get(lang, lang),
+        "message": f"Subscribed! You'll receive {lang_names.get(lang, lang)} alerts when risk in {county_name} County reaches High or Very High.",
     }
 
 
@@ -750,8 +1226,9 @@ def startup():
     print(f"  Counties loaded: {len(COUNTY_META)}")
     print(f"  Baseline predictions: {len(baseline_df)} rows")
     print(f"  TGCN predictions: {len(tgcn_df)} rows")
+    print(f"  Env data: {len(env_df)} monthly records")
     print(f"  Gemini API: {'configured' if GEMINI_API_KEY else 'NOT SET (using fallback)'}")
-    print(f"  Tip: export GEMINI_API_KEY='your-key' to enable AI summaries")
+    print(f"  Database: {'connected' if DATABASE_URL else 'not configured'}")
 
     # Start auto-refresh scheduler as background thread
     if AUTO_REFRESH_HOURS > 0:

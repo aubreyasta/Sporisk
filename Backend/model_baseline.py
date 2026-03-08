@@ -258,12 +258,30 @@ def save_predictions(monthly, y_pred, output_path="baseline_predictions.csv"):
     results["predicted_cases"] = y_pred
     results["residual"] = results["monthly_cases"] - results["predicted_cases"]
     
-    # Add a risk level based on predicted cases
-    results["predicted_risk"] = pd.cut(
-        results["predicted_cases"],
-        bins=[-np.inf, 10, 30, 80, np.inf],
-        labels=["Low", "Moderate", "High", "Very High"]
-    )
+    # Assign risk using county-relative percentile thresholds so that
+    # each county's seasonal variation is captured correctly.
+    # This ensures Kern (high-volume county) shows High/Very High in peak months
+    # rather than always being "Moderate" under global thresholds.
+    risk_labels = []
+    for _, row in results.iterrows():
+        county_preds = results.loc[results["county"] == row["county"], "predicted_cases"]
+        p = row["predicted_cases"]
+        q25 = county_preds.quantile(0.25)
+        q50 = county_preds.quantile(0.50)
+        q75 = county_preds.quantile(0.75)
+        if p <= q25:
+            risk_labels.append("Low")
+        elif p <= q50:
+            risk_labels.append("Moderate")
+        elif p <= q75:
+            risk_labels.append("High")
+        else:
+            risk_labels.append("Very High")
+    results["predicted_risk"] = risk_labels
+
+    # Numeric risk score for charting (1=Low, 2=Moderate, 3=High, 4=Very High)
+    score_map = {"Low": 1, "Moderate": 2, "High": 3, "Very High": 4}
+    results["risk_score"] = results["predicted_risk"].map(score_map)
     
     results.to_csv(output_path, index=False)
     print(f"\n  Saved predictions → {output_path}")
@@ -296,7 +314,7 @@ if __name__ == "__main__":
     print("=" * 60)
     
     # Load and prepare data
-    monthly = load_and_aggregate("sporerisk_master_corrected.csv")
+    monthly = load_and_aggregate()
     monthly = engineer_features(monthly)
     
     # Train and evaluate
