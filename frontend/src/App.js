@@ -5,42 +5,24 @@ import {
   ResponsiveContainer, ReferenceLine,
 } from "recharts";
 import "./App.css";
+import SNAPSHOT from "./data/snapshot.json";
 
-const API = process.env.REACT_APP_API_URL || "https://sporisk-backend-production.up.railway.app";
-
-// ── Dummy data fallback (used when backend is offline) ────────────────────────
-const DUMMY_COUNTIES = {
-  Fresno: { county: "Fresno", risk_level: "Moderate", risk_score: 6.2, gpot: 0.31, erisk: 0.20 },
-  Kern: { county: "Kern", risk_level: "High", risk_score: 11.4, gpot: 0.52, erisk: 0.22 },
-  Kings: { county: "Kings", risk_level: "Moderate", risk_score: 5.8, gpot: 0.29, erisk: 0.20 },
-  Madera: { county: "Madera", risk_level: "Low", risk_score: 2.1, gpot: 0.18, erisk: 0.12 },
-  Merced: { county: "Merced", risk_level: "Low", risk_score: 1.9, gpot: 0.15, erisk: 0.13 },
-  "San Joaquin": { county: "San Joaquin", risk_level: "Moderate", risk_score: 4.7, gpot: 0.27, erisk: 0.17 },
-  Stanislaus: { county: "Stanislaus", risk_level: "Low", risk_score: 2.4, gpot: 0.17, erisk: 0.14 },
-  Tulare: { county: "Tulare", risk_level: "High", risk_score: 9.8, gpot: 0.47, erisk: 0.21 },
-};
-const DUMMY_DETAIL = county => ({
-  county, ...DUMMY_COUNTIES[county],
-  environment: { soil_moisture: 0.14, temperature_c: 28.5, precip_daily_mm: 0, pm10_ugm3: 42, wind_speed_kmh: 18, precip_week_mm: 0.2 },
-  summary_bullets: [
-    "Risk index computed from historical environmental data (2020–2025).",
-    "Soil moisture 6-month lag and 18-month precipitation are the dominant predictors.",
-    "This is demonstration data — live backend currently offline.",
-  ],
-  advice: [
-    "Wear an N95 mask during outdoor activities, especially on windy days.",
-    "Avoid disturbing dry soil or being near construction sites.",
-    "Close windows and use HEPA filters during dust storms.",
-  ],
-});
-
+// Resolves API-shaped paths from the bundled static snapshot (see Backend/export_static.py).
+// No network call is made — the app has no backend to call.
 async function apiFetch(path) {
-  try {
-    const res = await fetch(`${API}${path}`, { signal: AbortSignal.timeout(8000) });
-    if (!res.ok) throw new Error(`${res.status}`);
-    return await res.json();
-  } catch {
-    return null;
+  const [resource, raw] = path.split("?")[0].split("/").filter(Boolean);
+  const county = raw ? decodeURIComponent(raw) : null;
+  switch (resource) {
+    case "counties": return SNAPSHOT.counties;
+    case "clinics": return SNAPSHOT.clinics;
+    case "vulnerable-zones": return SNAPSHOT.vulnerableZones;
+    case "risk": return SNAPSHOT.byCounty[county]?.risk ?? null;
+    case "history": return SNAPSHOT.byCounty[county]?.history ?? null;
+    case "summary": return SNAPSHOT.byCounty[county]?.summary ?? null;
+    case "insights": return SNAPSHOT.byCounty[county]?.insights ?? null;
+    case "env-history": return SNAPSHOT.byCounty[county]?.envHistory ?? null;
+    case "reports": return SNAPSHOT.byCounty[county]?.reports ?? null;
+    default: return null;
   }
 }
 
@@ -63,9 +45,9 @@ const RISK_LABEL = { 1: "Low", 2: "Moderate", 3: "High", 4: "Very High" };
 // Dark palette — landing screen only
 const DARK_PALETTE = {
   Low: { bg: "linear-gradient(160deg,#052e16 0%,#14532d 50%,#166534 100%)", accent: "#22c55e", glow: "rgba(34,197,94,0.45)", pulse: false },
-  Moderate: { bg: "linear-gradient(160deg,#422006 0%,#713f12 50%,#854d0e 100%)", accent: "#eab308", glow: "rgba(234,179,8,0.45)", pulse: false },
-  High: { bg: "linear-gradient(160deg,#3b0006 0%,#7f1d1d 50%,#991b1b 100%)", accent: "#ef4444", glow: "rgba(239,68,68,0.55)", pulse: false },
-  "Very High": { bg: "linear-gradient(160deg,#0a0000 0%,#1c0101 50%,#3b0000 100%)", accent: "#dc2626", glow: "rgba(220,38,38,0.70)", pulse: true },
+  Moderate: { bg: "linear-gradient(160deg,#422006 0%,#713f12 50%,#854d0e 100%)", accent: "#d97706", glow: "rgba(217,119,6,0.45)", pulse: false },
+  High: { bg: "linear-gradient(160deg,#3b0006 0%,#7f1d1d 50%,#991b1b 100%)", accent: "#dc2626", glow: "rgba(220,38,38,0.55)", pulse: false },
+  "Very High": { bg: "linear-gradient(160deg,#0a0000 0%,#1c0101 50%,#3b0000 100%)", accent: "#b91c1c", glow: "rgba(185,28,28,0.70)", pulse: true },
 };
 
 // Light palette — map view
@@ -606,17 +588,11 @@ function StatCard({ label, value, sub, warn, accent }) {
 function ReportModal({ county, onClose }) {
   const [severity, setSeverity] = useState(2);
   const [desc, setDesc] = useState("");
-  const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(null);
-  const rid = (() => { try { let id = localStorage.getItem("sr_rid"); if (!id) { id = Math.random().toString(36).slice(2); localStorage.setItem("sr_rid", id); } return id; } catch { return "anon"; } })();
 
-  const submit = async () => {
-    setSubmitting(true);
-    try {
-      const res = await fetch(`${API}/report/dust`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ county, severity, description: desc, reporter_id: rid }), signal: AbortSignal.timeout(8000) });
-      setDone(await res.json());
-    } catch { setDone({ success: true, message: "Report submitted!", badge_earned: false }); }
-    setSubmitting(false);
+  // Demo only — there is no backend, so nothing is sent or stored.
+  const submit = () => {
+    setDone({ message: "This is a demo. Nothing was sent or stored." });
   };
 
   return (
@@ -628,8 +604,8 @@ function ReportModal({ county, onClose }) {
         </div>
         {done ? (
           <div style={{ textAlign: "center", padding: "20px 0" }}>
-            <div style={{ fontSize: 40, marginBottom: 8 }}>{done.badge_earned ? "🏅" : "✅"}</div>
-            <div style={{ color: "#1e293b", fontWeight: 700, fontSize: 15, marginBottom: 6 }}>{done.badge_earned ? "Badge Earned: Community Shield 🛡️" : "Report Received!"}</div>
+            <div style={{ fontSize: 40, marginBottom: 8 }}>ℹ️</div>
+            <div style={{ color: "#1e293b", fontWeight: 700, fontSize: 15, marginBottom: 6 }}>Demo Submission</div>
             <div style={{ color: "#64748b", fontSize: 12, lineHeight: 1.6 }}>{done.message}</div>
             <button onClick={onClose} style={{ marginTop: 16, background: "#dc2626", border: "none", borderRadius: 12, padding: "10px 24px", color: "#fff", fontWeight: 700, cursor: "pointer" }}>Done</button>
           </div>
@@ -653,8 +629,8 @@ function ReportModal({ county, onClose }) {
               <div style={{ fontSize: 9, color: "#94a3b8", fontWeight: 700, letterSpacing: 0.5, marginBottom: 5 }}>DESCRIPTION (optional)</div>
               <textarea value={desc} onChange={e => setDesc(e.target.value)} placeholder="e.g. Dust wall approaching from the west near Hwy 99…" style={{ width: "100%", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 12px", color: "#1e293b", fontSize: 12, resize: "none", outline: "none", boxSizing: "border-box" }} rows={3} />
             </div>
-            <button onClick={submit} disabled={submitting} style={{ width: "100%", background: "#dc2626", border: "none", borderRadius: 12, padding: "13px", color: "#fff", fontWeight: 800, fontSize: 14, cursor: "pointer", opacity: submitting ? 0.6 : 1 }}>
-              {submitting ? "Submitting…" : "Submit Report"}
+            <button onClick={submit} style={{ width: "100%", background: "#dc2626", border: "none", borderRadius: 12, padding: "13px", color: "#fff", fontWeight: 800, fontSize: 14, cursor: "pointer" }}>
+              Submit Report
             </button>
           </>
         )}
@@ -667,18 +643,13 @@ function ReportModal({ county, onClose }) {
 function SmsModal({ county, onClose }) {
   const [phone, setPhone] = useState("");
   const [lang, setLang] = useState("english");
-  const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(null);
   const langs = [{ id: "english", label: "English", e: "🇺🇸" }, { id: "spanish", label: "Español", e: "🇲🇽" }, { id: "hmong", label: "Hmong", e: "🌏" }, { id: "punjabi", label: "ਪੰਜਾਬੀ", e: "🌏" }];
 
-  const submit = async () => {
+  // Demo only — there is no backend, so no SMS is ever sent.
+  const submit = () => {
     if (!phone.trim()) return;
-    setSubmitting(true);
-    try {
-      const r = await fetch(`${API}/alerts/subscribe`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ phone, county, language: lang }), signal: AbortSignal.timeout(8000) });
-      setDone(await r.json());
-    } catch { setDone({ success: true, message: `Subscribed for ${lang} alerts in ${county} County.` }); }
-    setSubmitting(false);
+    setDone({ message: "This is a demo. No message was sent or stored." });
   };
 
   return (
@@ -690,8 +661,8 @@ function SmsModal({ county, onClose }) {
         </div>
         {done ? (
           <div style={{ textAlign: "center", padding: "20px 0" }}>
-            <div style={{ fontSize: 40, marginBottom: 8 }}>✅</div>
-            <div style={{ color: "#1e293b", fontWeight: 700, fontSize: 15, marginBottom: 6 }}>Subscribed!</div>
+            <div style={{ fontSize: 40, marginBottom: 8 }}>ℹ️</div>
+            <div style={{ color: "#1e293b", fontWeight: 700, fontSize: 15, marginBottom: 6 }}>Demo Submission</div>
             <div style={{ color: "#64748b", fontSize: 12, lineHeight: 1.6 }}>{done.message}</div>
             <button onClick={onClose} style={{ marginTop: 16, background: "#16a34a", border: "none", borderRadius: 12, padding: "10px 24px", color: "#fff", fontWeight: 700, cursor: "pointer" }}>Done</button>
           </div>
@@ -712,8 +683,8 @@ function SmsModal({ county, onClose }) {
                 ))}
               </div>
             </div>
-            <button onClick={submit} disabled={submitting || !phone.trim()} style={{ width: "100%", background: "#3b82f6", border: "none", borderRadius: 12, padding: "13px", color: "#fff", fontWeight: 800, fontSize: 14, cursor: "pointer", opacity: (submitting || !phone.trim()) ? 0.5 : 1 }}>
-              {submitting ? "Subscribing…" : "Subscribe to Alerts"}
+            <button onClick={submit} disabled={!phone.trim()} style={{ width: "100%", background: "#3b82f6", border: "none", borderRadius: 12, padding: "13px", color: "#fff", fontWeight: 800, fontSize: 14, cursor: "pointer", opacity: !phone.trim() ? 0.5 : 1 }}>
+              Subscribe to Alerts
             </button>
           </>
         )}
@@ -733,7 +704,7 @@ export default function App() {
   const [sel, setSel] = useState(null);
   const [sh, setSh] = useState(0);
   const [co, setCo] = useState(false);
-  const [msgs, setMsgs] = useState([{ r: "b", t: "SporeRisk AI — Ask about Valley Fever symptoms, prevention, treatment, clinics, or risk in any county." }]);
+  const [msgs, setMsgs] = useState([{ r: "b", t: "Sporisk Chat (offline keyword answers) — Ask about Valley Fever symptoms, prevention, treatment, clinics, or risk in any county." }]);
   const [ci, setCi] = useState("");
   const [cb, setCb] = useState(false);
   const ce = useRef(null);
@@ -745,9 +716,6 @@ export default function App() {
   const [apiInsights, setApiInsights] = useState(null);
   const [apiEnvHistory, setApiEnvHistory] = useState(null);
   const [apiReports, setApiReports] = useState(null);
-  const [apiConnected, setApiConnected] = useState(false);
-
-  const [usingDummy, setUsingDummy] = useState(false);
   const [mapMode, setMapMode] = useState("normal");
   const [vulnZones, setVulnZones] = useState([]);
   const [clinicsData, setClinicsData] = useState([]);
@@ -757,37 +725,44 @@ export default function App() {
   // Geolocation — manual, triggered by button
   const [geoRequested, setGeoRequested] = useState(false);
 
+  // Detects the county client-side from the county GeoJSON, then reads its risk
+  // from the bundled snapshot — no backend to ask.
   const requestLocation = () => {
     if (geoRequested || geoData) return;
     setGeoRequested(true);
     setGeoLoading(true);
     if (!navigator.geolocation) { setGeoError("Geolocation not supported"); setGeoLoading(false); return; }
     navigator.geolocation.getCurrentPosition(async pos => {
-      const d = await apiFetch(`/risk?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`);
-      if (d) { setGeoData(d); try { sessionStorage.setItem("sr_geo", JSON.stringify(d)); } catch { } }
-      else setGeoError("County not in tracked area");
+      try {
+        const { latitude: lat, longitude: lon } = pos.coords;
+        const geo = await fetch(CA_GEOJSON_URL).then(r => r.json());
+        const match = geo.features.find(f => pointInFeature(lon, lat, f));
+        const name = match?.properties?.name;
+        const risk = (name && TARGET_COUNTIES.includes(name)) ? SNAPSHOT.byCounty[name]?.risk : null;
+        if (risk) {
+          const d = { ...risk, detected_county: name };
+          setGeoData(d);
+          try { sessionStorage.setItem("sr_geo", JSON.stringify(d)); } catch { }
+        } else {
+          setGeoError("County not in tracked area");
+        }
+      } catch {
+        setGeoError("Location lookup failed");
+      }
       setGeoLoading(false);
     }, () => { setGeoError("Location access denied"); setGeoLoading(false); }, { timeout: 8000, maximumAge: 300000 });
   };
 
-  // Counties list — fall back to dummy data if backend offline
+  // Counties list — from the bundled snapshot
   useEffect(() => {
     apiFetch("/counties").then(d => {
-      if (d?.counties) {
-        setApiConnected(true);
-        setUsingDummy(false);
-        const m = {};
-        d.counties.forEach(c => { m[c.county] = c; });
-        setApiCounties(m);
-      } else {
-        // Backend offline — use dummy data
-        setUsingDummy(true);
-        setApiCounties(DUMMY_COUNTIES);
-      }
+      const m = {};
+      (d?.counties || []).forEach(c => { m[c.county] = c; });
+      setApiCounties(m);
     });
   }, []);
 
-  // County detail — fall back to dummy when backend offline
+  // County detail — from the bundled snapshot
   useEffect(() => {
     if (!sel) return;
     setApiDetail(null); setApiHistory(null); setApiSummary(null); setApiInsights(null); setApiEnvHistory(null); setApiReports(null);
@@ -799,13 +774,12 @@ export default function App() {
       apiFetch(`/env-history/${encodeURIComponent(sel)}`),
       apiFetch(`/reports/${encodeURIComponent(sel)}`),
     ]).then(([risk, hist, summ, ins, env, rep]) => {
-      if (risk) { setApiDetail(risk); }
-      else { setApiDetail(DUMMY_DETAIL(sel)); setUsingDummy(true); }
-      if (hist) setApiHistory(hist);
-      if (summ) setApiSummary(summ);
-      if (ins) setApiInsights(ins);
-      if (env) setApiEnvHistory(env);
-      if (rep) setApiReports(rep);
+      setApiDetail(risk);
+      setApiHistory(hist);
+      setApiSummary(summ);
+      setApiInsights(ins);
+      setApiEnvHistory(env);
+      setApiReports(rep);
     });
   }, [sel]);
 
@@ -840,15 +814,10 @@ export default function App() {
   const adviceBullets = apiSummary?.advice || apiDetail?.advice || [];
   const insightBullets = apiInsights?.insights || [];
 
-  const send = async () => {
+  // Offline keyword answers — there is no backend and no AI model behind this chat.
+  const send = () => {
     if (!ci.trim() || cb) return;
     const m = ci.trim(); setCi(""); setMsgs(p => [...p, { r: "u", t: m }]); setCb(true);
-    try {
-      const body = { message: m }; if (sel) body.county = sel;
-      const r = await fetch(`${API}/chat`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(15000) });
-      const d = await r.json();
-      if (d.reply) { setMsgs(p => [...p, { r: "b", t: d.reply }]); setCb(false); return; }
-    } catch { }
     const lo = m.toLowerCase();
     let rp = "Ask about Valley Fever symptoms, prevention, clinics, or risk levels.";
     if (lo.includes("symptom")) rp = "Symptoms: persistent cough, fever/chills, fatigue, chest pain, joint aches, rash. See a doctor if lasting > 1–2 weeks.";
@@ -910,7 +879,7 @@ export default function App() {
         </button>
         <div style={{ display: "flex", gap: 8 }}>
           <button className="pill-btn" onClick={() => { sessionStorage.setItem("sr_seen", "1"); setView("map"); setShowSms(true); }} style={{ flex: 1, padding: "11px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>📱 SMS Alerts</button>
-          <button className="pill-btn" onClick={() => setCo(c => !c)} style={{ flex: 1, padding: "11px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>💬 Ask AI</button>
+          <button className="pill-btn" onClick={() => setCo(c => !c)} style={{ flex: 1, padding: "11px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>💬 Chat</button>
           <a href="https://sporisk.vercel.app" target="_blank" rel="noopener noreferrer" className="pill-btn" style={{ flex: 1, padding: "11px", borderRadius: 12, border: "1px solid rgba(217,119,6,0.2)", background: "rgba(217,119,6,0.06)", color: "#d97706", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans',sans-serif", textDecoration: "none", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center" }}>📖 Theory</a>
         </div>
       </div>
@@ -919,7 +888,7 @@ export default function App() {
     const FormulaSection = () => (
       <div>
         <div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", fontFamily: "'DM Sans',sans-serif", fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>The Algorithm</div>
-        <div style={{ fontFamily: "'Playfair Display',serif", fontSize: isDesktop ? 22 : 20, color: "#fff", fontWeight: 700, marginBottom: 6 }}>Two-Phase Risk Index</div>
+        <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: isDesktop ? 22 : 20, color: "#fff", fontWeight: 700, marginBottom: 6 }}>Two-Phase Risk Index</div>
         <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", fontFamily: "'DM Sans',sans-serif", lineHeight: 1.6, margin: "0 0 16px", fontWeight: 300 }}>
           Growth without dispersal = zero cases. Dispersal without growth = nothing to disperse. Both phases must align.
         </p>
@@ -928,7 +897,7 @@ export default function App() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
               <div>
                 <div style={{ fontSize: 9, color: "#d97706", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>Phase 1 · Growth Potential</div>
-                <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 14, color: "#fff", marginTop: 2 }}>G<sub>pot</sub></div>
+                <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 14, color: "#fff", marginTop: 2 }}>G<sub>pot</sub></div>
               </div>
               <span style={{ fontSize: 18 }}>🌧️</span>
             </div>
@@ -937,12 +906,12 @@ export default function App() {
             </div>
             <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "'DM Sans',sans-serif", marginTop: 8, lineHeight: 1.5 }}>Was the ground wet 6 months ago? Was it warm? Did it rain 1.5 years ago — the drought/deluge signal?</div>
           </div>
-          <div style={{ textAlign: "center", fontSize: 18, color: "rgba(255,255,255,0.2)", fontFamily: "'Playfair Display',serif" }}>×</div>
+          <div style={{ textAlign: "center", fontSize: 18, color: "rgba(255,255,255,0.2)", fontFamily: "'DM Sans',sans-serif" }}>×</div>
           <div className="formula-card" style={{ background: "rgba(220,38,38,0.07)", border: "1px solid rgba(220,38,38,0.18)", borderRadius: 12, padding: "14px 16px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
               <div>
                 <div style={{ fontSize: 9, color: "#f87171", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>Phase 2 · Exposure Risk</div>
-                <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 14, color: "#fff", marginTop: 2 }}>E<sub>risk</sub></div>
+                <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 14, color: "#fff", marginTop: 2 }}>E<sub>risk</sub></div>
               </div>
               <span style={{ fontSize: 18 }}>💨</span>
             </div>
@@ -951,10 +920,10 @@ export default function App() {
             </div>
             <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "'DM Sans',sans-serif", marginTop: 8, lineHeight: 1.5 }}>Is air dusty? Is soil dry? Are winds carrying particulates? Hot enough for maturation?</div>
           </div>
-          <div style={{ textAlign: "center", fontSize: 16, color: "rgba(255,255,255,0.2)", fontFamily: "'Playfair Display',serif" }}>× 100</div>
+          <div style={{ textAlign: "center", fontSize: 16, color: "rgba(255,255,255,0.2)", fontFamily: "'DM Sans',sans-serif" }}>× 100</div>
           <div style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: "12px 16px", textAlign: "center" }}>
             <div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", fontFamily: "'DM Sans',sans-serif", fontWeight: 600, letterSpacing: 1.5, textTransform: "uppercase" }}>Sporisk Score</div>
-            <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 26, color: "#fff", fontWeight: 700, margin: "4px 0 2px" }}>0 – 100</div>
+            <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 26, color: "#fff", fontWeight: 700, margin: "4px 0 2px" }}>0 – 100</div>
             <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontFamily: "'DM Sans',sans-serif" }}>Low · Moderate · High · Very High</div>
           </div>
         </div>
@@ -967,7 +936,7 @@ export default function App() {
     const ModelSection = () => (
       <div>
         <div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", fontFamily: "'DM Sans',sans-serif", fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>Machine Learning</div>
-        <div style={{ fontFamily: "'Playfair Display',serif", fontSize: isDesktop ? 22 : 20, color: "#fff", fontWeight: 700, marginBottom: 14 }}>Two Complementary Models</div>
+        <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: isDesktop ? 22 : 20, color: "#fff", fontWeight: 700, marginBottom: 14 }}>Two Complementary Models</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {[
             { icon: "🌲", name: "Random Forest", badge: "Baseline", badgeColor: "rgba(96,165,250,0.15)", badgeBorder: "rgba(96,165,250,0.3)", badgeText: "#60a5fa", desc: "200 trees, max depth 10. 16 hand-engineered lag features. Leave-One-County-Out cross-validation proves spatial generalization.", stats: [{ l: "#1 feature", v: "sm_lag6 (22.3%)" }, { l: "Output", v: "Sporisk 0–100" }] },
@@ -977,7 +946,7 @@ export default function App() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
                   <span style={{ fontSize: 20 }}>{m.icon}</span>
-                  <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 15, color: "#fff", fontWeight: 700 }}>{m.name}</div>
+                  <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 15, color: "#fff", fontWeight: 700 }}>{m.name}</div>
                 </div>
                 <div style={{ fontSize: 9, padding: "3px 9px", borderRadius: 100, background: m.badgeColor, border: `1px solid ${m.badgeBorder}`, color: m.badgeText, fontFamily: "'DM Sans',sans-serif", fontWeight: 700, letterSpacing: 0.5 }}>{m.badge}</div>
               </div>
@@ -999,7 +968,7 @@ export default function App() {
     const PipelineSection = () => (
       <div>
         <div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", fontFamily: "'DM Sans',sans-serif", fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>Stack</div>
-        <div style={{ fontFamily: "'Playfair Display',serif", fontSize: isDesktop ? 22 : 20, color: "#fff", fontWeight: 700, marginBottom: 14 }}>From Environment to Prediction</div>
+        <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: isDesktop ? 22 : 20, color: "#fff", fontWeight: 700, marginBottom: 14 }}>From Environment to Prediction</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
           {[
             { step: "01", label: "Scraper", desc: "NOAA · EPA AQS · Open-Meteo · CDPH", icon: "📡", color: "#60a5fa" },
@@ -1034,7 +1003,7 @@ export default function App() {
             { init: "D", name: "Nathan Raphael Martua Nainggolan", role: "Urban Studies" },
           ].map((t, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 9, padding: "10px 12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 10 }}>
-              <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(217,119,6,0.2)", border: "1px solid rgba(217,119,6,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#d97706", fontFamily: "'Playfair Display',serif", flexShrink: 0 }}>{t.init}</div>
+              <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(217,119,6,0.2)", border: "1px solid rgba(217,119,6,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#d97706", fontFamily: "'DM Sans',sans-serif", flexShrink: 0 }}>{t.init}</div>
               <div>
                 <div style={{ fontSize: 10, color: "rgba(255,255,255,0.65)", fontFamily: "'DM Sans',sans-serif", fontWeight: 600, lineHeight: 1.3 }}>{t.name.split(" ").slice(0, 2).join(" ")}</div>
                 <div style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", fontFamily: "'DM Sans',sans-serif", marginTop: 1 }}>{t.role}</div>
@@ -1047,7 +1016,6 @@ export default function App() {
 
     // ── Shared styles ──────────────────────────────────────────────────────────
     const sharedStyles = `
-      @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
       .land-fade { opacity:0; transform:translateY(18px); animation: fadeUp 0.65s ease forwards; }
       @keyframes fadeUp { to { opacity:1; transform:translateY(0); } }
       .spore-particle { position:absolute; border-radius:50%; pointer-events:none; animation: drift linear infinite; }
@@ -1056,7 +1024,7 @@ export default function App() {
       .pill-btn:hover { transform:translateY(-1px); filter:brightness(1.1); }
       .formula-card { transition: transform 0.2s, box-shadow 0.2s; }
       .formula-card:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(0,0,0,0.4); }
-      .stat-num { font-family:'Playfair Display',serif; }
+      .stat-num { font-family:'DM Sans',sans-serif; }
       /* Desktop scrollbar */
       .land-scroll::-webkit-scrollbar { width:4px; }
       .land-scroll::-webkit-scrollbar-track { background:transparent; }
@@ -1085,19 +1053,19 @@ export default function App() {
     // ── DESKTOP LAYOUT ─────────────────────────────────────────────────────────
     if (isDesktop) {
       return (
-        <div style={{ minHeight: "100vh", background: "#0a0c0f", fontFamily: "'Georgia',serif", display: "flex", flexDirection: "column" }}>
+        <div style={{ minHeight: "100vh", background: "#0a0c0f", fontFamily: "'DM Sans',sans-serif", display: "flex", flexDirection: "column" }}>
           <style>{sharedStyles}</style>
 
           {/* Top nav bar */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 48px", borderBottom: "1px solid rgba(255,255,255,0.06)", position: "sticky", top: 0, background: "rgba(10,12,15,0.95)", backdropFilter: "blur(12px)", zIndex: 100 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontSize: 22 }}>🍄</span>
-              <span style={{ fontFamily: "'Playfair Display',serif", fontWeight: 900, fontSize: 20, color: "#fff", letterSpacing: -0.5 }}>SporeRisk</span>
+              <span style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 900, fontSize: 20, color: "#fff", letterSpacing: -0.5 }}>Sporisk</span>
               <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "'DM Sans',sans-serif", marginLeft: 4 }}>· Project Overview</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ fontSize: 10, padding: "5px 12px", borderRadius: 12, fontWeight: 600, letterSpacing: 0.5, background: apiConnected ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.07)", color: apiConnected ? "#4ade80" : "#64748b", border: `1px solid ${apiConnected ? "rgba(34,197,94,0.25)" : "rgba(255,255,255,0.1)"}`, fontFamily: "'DM Sans',sans-serif" }}>
-                {apiConnected ? "● LIVE MODEL" : "● CONNECTING"}
+              <div style={{ fontSize: 10, padding: "5px 12px", borderRadius: 12, fontWeight: 600, letterSpacing: 0.5, background: "rgba(255,255,255,0.07)", color: "#64748b", border: "1px solid rgba(255,255,255,0.1)", fontFamily: "'DM Sans',sans-serif" }}>
+                ● Demo
               </div>
               <a href="https://sporisk.vercel.app" target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontFamily: "'DM Sans',sans-serif", textDecoration: "none", fontWeight: 500 }}>Theory page ↗</a>
               <button className="pill-btn" onClick={() => goMap(dc)} style={{ padding: "9px 22px", borderRadius: 10, border: "none", background: isHigh ? "#dc2626" : "#d97706", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "'DM Sans',sans-serif", letterSpacing: 0.3, boxShadow: isHigh ? "0 2px 16px rgba(220,38,38,0.4)" : "0 2px 16px rgba(217,119,6,0.4)" }}>
@@ -1121,7 +1089,7 @@ export default function App() {
                 <span style={{ fontSize: 10, color: "#d97706", fontFamily: "'DM Sans',sans-serif", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" }}>Project Overview · HackMerced XI · UC San Diego</span>
               </div>
 
-              <h1 className="land-fade" style={{ animationDelay: "0.1s", fontFamily: "'Playfair Display',serif", fontSize: 52, fontWeight: 900, color: "#fff", lineHeight: 1.05, margin: "0 0 16px", letterSpacing: -2 }}>
+              <h1 className="land-fade" style={{ animationDelay: "0.1s", fontFamily: "'DM Sans',sans-serif", fontSize: 52, fontWeight: 900, color: "#fff", lineHeight: 1.05, margin: "0 0 16px", letterSpacing: -2 }}>
                 Valley Fever<br /><span style={{ color: "#d97706" }}>Risk</span><br />Intelligence
               </h1>
               <p className="land-fade" style={{ animationDelay: "0.2s", fontSize: 15, color: "rgba(255,255,255,0.5)", lineHeight: 1.75, margin: "0 0 28px", fontFamily: "'DM Sans',sans-serif", fontWeight: 300, maxWidth: 480 }}>
@@ -1143,8 +1111,8 @@ export default function App() {
                     { n: "8", sub: "counties modeled", note: "18,056 daily obs", color: "#60a5fa" },
                   ].map((s, i) => (
                     <div key={i} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "16px 18px" }}>
-                      <div className="stat-num" style={{ fontSize: 30, fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.n}</div>
-                      <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", fontFamily: "'DM Sans',sans-serif", marginTop: 4, fontWeight: 500 }}>{s.sub}</div>
+                      <div style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, letterSpacing: 0.6, textTransform: "uppercase" }}>{s.sub}</div>
+                      <div className="stat-num" style={{ fontSize: 30, fontWeight: 800, color: s.color, lineHeight: 1, marginTop: 4 }}>{s.n}</div>
                       <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", fontFamily: "'DM Sans',sans-serif", marginTop: 2 }}>{s.note}</div>
                     </div>
                   ))}
@@ -1178,7 +1146,7 @@ export default function App() {
 
     // ── MOBILE LAYOUT ──────────────────────────────────────────────────────────
     return (
-      <div style={{ minHeight: "100vh", maxWidth: 480, margin: "0 auto", background: "#0a0c0f", fontFamily: "'Georgia',serif", overflowY: "auto", position: "relative" }}>
+      <div style={{ minHeight: "100vh", maxWidth: 480, margin: "0 auto", background: "#0a0c0f", fontFamily: "'DM Sans',sans-serif", overflowY: "auto", position: "relative" }}>
         <style>{sharedStyles}</style>
 
         {particles.map((p, i) => (
@@ -1189,10 +1157,10 @@ export default function App() {
         <div style={{ padding: "24px 24px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
             <span style={{ fontSize: 22 }}>🍄</span>
-            <span style={{ fontFamily: "'Playfair Display',serif", fontWeight: 900, fontSize: 20, color: "#fff", letterSpacing: -0.5 }}>SporeRisk</span>
+            <span style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 900, fontSize: 20, color: "#fff", letterSpacing: -0.5 }}>Sporisk</span>
           </div>
-          <div style={{ fontSize: 9, padding: "4px 10px", borderRadius: 12, fontWeight: 600, letterSpacing: 0.5, background: apiConnected ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.07)", color: apiConnected ? "#4ade80" : "#64748b", border: `1px solid ${apiConnected ? "rgba(34,197,94,0.3)" : "rgba(255,255,255,0.1)"}`, fontFamily: "'DM Sans',sans-serif" }}>
-            {apiConnected ? "● LIVE" : "● CONNECTING"}
+          <div style={{ fontSize: 9, padding: "4px 10px", borderRadius: 12, fontWeight: 600, letterSpacing: 0.5, background: "rgba(255,255,255,0.07)", color: "#64748b", border: "1px solid rgba(255,255,255,0.1)", fontFamily: "'DM Sans',sans-serif" }}>
+            ● Demo
           </div>
         </div>
 
@@ -1203,7 +1171,7 @@ export default function App() {
             <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#d97706" }} />
             <span style={{ fontSize: 9, color: "#d97706", fontFamily: "'DM Sans',sans-serif", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" }}>Project Overview · HackMerced XI</span>
           </div>
-          <h1 className="land-fade" style={{ animationDelay: "0.1s", fontFamily: "'Playfair Display',serif", fontSize: 36, fontWeight: 900, color: "#fff", lineHeight: 1.1, margin: "0 0 12px", letterSpacing: -1 }}>
+          <h1 className="land-fade" style={{ animationDelay: "0.1s", fontFamily: "'DM Sans',sans-serif", fontSize: 36, fontWeight: 900, color: "#fff", lineHeight: 1.1, margin: "0 0 12px", letterSpacing: -1 }}>
             Valley Fever<br /><span style={{ color: "#d97706" }}>Risk Intelligence</span><br />for the Central Valley
           </h1>
           <p className="land-fade" style={{ animationDelay: "0.2s", fontSize: 13, color: "rgba(255,255,255,0.5)", lineHeight: 1.7, margin: "0 0 20px", fontFamily: "'DM Sans',sans-serif", fontWeight: 300 }}>
@@ -1225,8 +1193,8 @@ export default function App() {
               { n: "8", sub: "counties modeled", note: "18,056 daily obs", color: "#60a5fa" },
             ].map((s, i) => (
               <div key={i} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "14px 16px" }}>
-                <div className="stat-num" style={{ fontSize: 26, fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.n}</div>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", fontFamily: "'DM Sans',sans-serif", marginTop: 4, fontWeight: 500 }}>{s.sub}</div>
+                <div style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, letterSpacing: 0.6, textTransform: "uppercase" }}>{s.sub}</div>
+                <div className="stat-num" style={{ fontSize: 26, fontWeight: 800, color: s.color, lineHeight: 1, marginTop: 4 }}>{s.n}</div>
                 <div style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", fontFamily: "'DM Sans',sans-serif", marginTop: 2 }}>{s.note}</div>
               </div>
             ))}
@@ -1253,7 +1221,11 @@ export default function App() {
         {co && (
           <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, height: "70vh", background: "#111827", borderRadius: "16px 16px 0 0", boxShadow: "0 -4px 24px rgba(0,0,0,0.5)", zIndex: 400, display: "flex", flexDirection: "column", border: "1px solid #1f2937" }}>
             <div style={{ padding: "12px 16px 8px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #1f2937" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}><span>🍄</span><span style={{ fontWeight: 800, fontSize: 14, color: "#f9fafb", fontFamily: "'DM Sans',sans-serif" }}>SporeRisk AI</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span>🍄</span>
+                <span style={{ fontWeight: 800, fontSize: 14, color: "#f9fafb", fontFamily: "'DM Sans',sans-serif" }}>Sporisk Chat</span>
+                <span style={{ fontSize: 8, color: "#6b7280", fontWeight: 600 }}>offline keyword answers</span>
+              </div>
               <button onClick={() => setCo(false)} style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#6b7280" }}>✕</button>
             </div>
             <div style={{ flex: 1, overflowY: "auto", padding: "0 12px 8px" }}>
@@ -1278,7 +1250,7 @@ export default function App() {
   // ── MAP VIEW ───────────────────────────────────────────────────────────────
   return (
     <>
-      <div style={{ height: "100vh", overflow: "hidden", background: lPal.appBg, fontFamily: "'Inter',system-ui,sans-serif", maxWidth: isDesktop ? "100%" : 480, margin: "0 auto", position: "relative", transition: "background 0.6s ease", display: "flex", flexDirection: "column" }}>
+      <div style={{ height: "100vh", overflow: "hidden", background: lPal.appBg, fontFamily: "'DM Sans',sans-serif", maxWidth: isDesktop ? "100%" : 480, margin: "0 auto", position: "relative", transition: "background 0.6s ease", display: "flex", flexDirection: "column" }}>
 
         {/* Header */}
         <header style={{ padding: isDesktop ? "11px 24px" : "11px 16px", background: "rgba(255,255,255,0.92)", backdropFilter: "blur(10px)", borderBottom: `2px solid ${lPal.headerBorder}`, display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, zIndex: 100, transition: "border-color 0.5s ease" }}>
@@ -1287,12 +1259,12 @@ export default function App() {
               ← Overview
             </button>
             <span style={{ fontSize: 18 }}>🍄</span>
-            <span style={{ fontWeight: 900, fontSize: 18, color: "#1e293b", letterSpacing: -0.5 }}>SporeRisk</span>
+            <span style={{ fontWeight: 900, fontSize: 18, color: "#1e293b", letterSpacing: -0.5 }}>Sporisk</span>
             <span style={{ fontSize: 9, color: "#94a3b8", fontWeight: 500, marginLeft: 2 }}>Central Valley</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <div style={{ fontSize: 9, padding: "3px 8px", borderRadius: 10, fontWeight: 600, background: apiConnected ? lPal.pillBg : "#f1f5f9", color: apiConnected ? lPal.pillText : "#64748b", border: `1px solid ${apiConnected ? lPal.border : "#e2e8f0"}` }}>
-              {apiConnected ? "● Live" : usingDummy ? "● Demo" : "● Connecting…"}
+            <div style={{ fontSize: 9, padding: "3px 8px", borderRadius: 10, fontWeight: 600, background: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0" }}>
+              ● Demo
             </div>
             {geoData?.detected_county && (
               <div style={{ fontSize: 9, padding: "3px 8px", borderRadius: 10, fontWeight: 600, background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0" }}>
@@ -1302,15 +1274,13 @@ export default function App() {
           </div>
         </header>
 
-        {/* Dummy data disclaimer banner */}
-        {usingDummy && (
-          <div className="demo-banner" style={{ background: "linear-gradient(90deg,#fef9ec,#fffbeb)", borderBottom: "1px solid #fde68a", padding: "7px 16px", display: "flex", alignItems: "center", gap: 8, flexShrink: 0, zIndex: 90 }}>
-            <span style={{ fontSize: 13 }}>🧪</span>
-            <span style={{ fontSize: 10, color: "#92400e", lineHeight: 1.4 }}>
-              <strong>Demo Mode — </strong>Live backend offline (Railway free plan). Showing estimated data. In production, an automated scraper would pull real-time NOAA, EPA &amp; CDPH data.
-            </span>
-          </div>
-        )}
+        {/* Snapshot data disclaimer banner */}
+        <div className="demo-banner" style={{ background: "linear-gradient(90deg,#fef9ec,#fffbeb)", borderBottom: "1px solid #fde68a", padding: "7px 16px", display: "flex", alignItems: "center", gap: 8, flexShrink: 0, zIndex: 90 }}>
+          <span style={{ fontSize: 13 }}>🧪</span>
+          <span style={{ fontSize: 10, color: "#92400e", lineHeight: 1.4 }}>
+            <strong>Demo Mode — </strong>All data is a static model snapshot generated once from the trained model, not a live feed. Summaries are rule-based, not AI-generated.
+          </span>
+        </div>
 
         {/* Map section — fills all remaining viewport height */}
         <div style={{ display: "flex", flexDirection: isDesktop ? "row" : "column", flex: 1, minHeight: 0, overflow: "hidden" }}>
@@ -1389,16 +1359,16 @@ export default function App() {
               <StatCard label="Precip (7 days)" value={env?.precip_week_mm != null ? `${env.precip_week_mm.toFixed(1)} mm` : null} warn={env?.precip_week_mm === 0} sub="0 mm = dry soil risk" />
             </div>
 
-            {/* AI Risk Summary */}
+            {/* Risk Summary */}
             <div style={{ background: lPal.summaryBg, borderRadius: 10, padding: "11px 13px", marginBottom: 12, border: `1px solid ${lPal.summaryBorder}` }}>
               <div style={{ fontSize: 9, color: lPal.accent, fontWeight: 700, letterSpacing: 0.5, marginBottom: 5 }}>
-                {currentRisk === "Very High" ? "⚠️ CRITICAL RISK ALERT" : "✨ AI Risk Summary"}
+                {currentRisk === "Very High" ? "⚠️ CRITICAL RISK ALERT" : "Risk Summary"}
               </div>
               {summaryBullets.length > 0 ? (
                 <ul style={{ margin: 0, paddingLeft: 14 }}>
                   {summaryBullets.map((b, i) => <li key={i} style={{ fontSize: 11, color: lPal.summaryText, lineHeight: 1.55, marginBottom: 2 }}>{b}</li>)}
                 </ul>
-              ) : <p style={{ margin: 0, fontSize: 11, color: "#94a3b8" }}>Loading AI analysis…</p>}
+              ) : <p style={{ margin: 0, fontSize: 11, color: "#94a3b8" }}>No summary available.</p>}
             </div>
 
             {/* Clinics for this county */}
@@ -1546,7 +1516,8 @@ export default function App() {
           <div style={{ padding: "12px 16px 8px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span>🍄</span>
-              <span style={{ fontWeight: 800, fontSize: 14, color: "#1e293b" }}>SporeRisk AI</span>
+              <span style={{ fontWeight: 800, fontSize: 14, color: "#1e293b" }}>Sporisk Chat</span>
+              <span style={{ fontSize: 8, color: "#94a3b8", fontWeight: 600 }}>offline keyword answers</span>
               {sel && <span style={{ fontSize: 9, color: "#64748b", background: "#f1f5f9", padding: "2px 6px", borderRadius: 8 }}>{sel}</span>}
             </div>
             <button onClick={() => setCo(false)} style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#94a3b8" }}>✕</button>

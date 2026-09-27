@@ -28,3 +28,10 @@ scheduler.log
 # Large data files (training data — not needed for deployment)
 data/sporerisk_master_corrected.csv
 data/cases.csv
+
+# Agent docs
+CLAUDE.md
+PRODUCT.md
+DESIGN.md
+PLAN.md
+.impeccable/

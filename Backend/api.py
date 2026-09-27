@@ -43,7 +43,7 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "")
 # ─────────────────────────────────────────────────────────────────────────────
 
 app = FastAPI(
-    title="SporeRisk API",
+    title="Sporisk API",
     description="Valley Fever risk prediction for California's Central Valley",
     version="1.0.0",
 )
