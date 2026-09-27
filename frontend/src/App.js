@@ -34,16 +34,12 @@ const DUMMY_DETAIL = county => ({
   ],
 });
 
-let _backendAlive = null; // null=unknown, true=alive, false=dead
-
 async function apiFetch(path) {
   try {
     const res = await fetch(`${API}${path}`, { signal: AbortSignal.timeout(8000) });
     if (!res.ok) throw new Error(`${res.status}`);
-    _backendAlive = true;
     return await res.json();
   } catch {
-    _backendAlive = false;
     return null;
   }
 }
